@@ -11,6 +11,10 @@ crest.
 - **Fixtures:** real Champions League data via `npm run sync` — the official
   UEFA feed (no API key), with football-data.org / API-Football as alternatives,
   plus a self-advancing `mock` mode.
+- **Also:** Hungarian UI by default (EN/HU toggle), installable as a PWA,
+  everyone's picks revealed once a match kicks off, a "to-do" nudge for missing
+  predictions, profile stats + rank-over-time chart, and automatic phase
+  transitions (knockout betting opens itself; the champion is set from the final).
 - **Cost to run:** **$0** to start.
 
 ---
@@ -52,9 +56,10 @@ Every match locks automatically at kickoff.
 ### Apply the schema
 
 **SQL editor:** paste [`supabase/setup.sql`](supabase/setup.sql) and run.
-*(Already ran an earlier version? Also run
-[`supabase/migrations/20260101000006_playoff_stage.sql`](supabase/migrations/20260101000006_playoff_stage.sql)
-— it adds the knockout play-off round.)*
+*(Already have an older schema? Run whichever migrations you're missing from
+[`supabase/migrations/`](supabase/migrations/) — `…0006` adds the knockout
+play-off round, `…0007` reveals everyone's picks after kickoff, `…0008` adds
+the standings-history table for the profile chart.)*
 
 **or CLI:** `supabase link --project-ref <ref> && supabase db push`
 
