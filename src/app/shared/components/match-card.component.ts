@@ -7,12 +7,13 @@ import {
   output
 } from '@angular/core';
 import { CountdownComponent } from './countdown.component';
+import { TeamCrestComponent } from './team-crest.component';
 import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
 
 @Component({
   selector: 'app-match-card',
   standalone: true,
-  imports: [CountdownComponent],
+  imports: [CountdownComponent, TeamCrestComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card animate-fade-in p-4 sm:p-5">
@@ -43,13 +44,7 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
       <!-- teams + score -->
       <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
         <div class="flex flex-col items-center gap-2 text-center">
-          <div class="grid h-12 w-12 place-items-center overflow-hidden rounded-full bg-white/5 ring-1 ring-white/10">
-            @if (crest(m().home_team)) {
-              <img [src]="crest(m().home_team)" [alt]="name(m().home_team)" class="h-9 w-9 object-contain" />
-            } @else {
-              <span class="text-sm font-bold text-slate-300">{{ initials(m().home_team) }}</span>
-            }
-          </div>
+          <app-team-crest [team]="m().home_team" size="md" />
           <span class="text-sm font-semibold leading-tight">{{ name(m().home_team) }}</span>
         </div>
 
@@ -67,13 +62,7 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
         </div>
 
         <div class="flex flex-col items-center gap-2 text-center">
-          <div class="grid h-12 w-12 place-items-center overflow-hidden rounded-full bg-white/5 ring-1 ring-white/10">
-            @if (crest(m().away_team)) {
-              <img [src]="crest(m().away_team)" [alt]="name(m().away_team)" class="h-9 w-9 object-contain" />
-            } @else {
-              <span class="text-sm font-bold text-slate-300">{{ initials(m().away_team) }}</span>
-            }
-          </div>
+          <app-team-crest [team]="m().away_team" size="md" />
           <span class="text-sm font-semibold leading-tight">{{ name(m().away_team) }}</span>
         </div>
       </div>
@@ -186,21 +175,6 @@ export class MatchCardComponent {
 
   name(t?: Team | null): string {
     return t?.short_name || t?.name || 'TBD';
-  }
-
-  crest(t?: Team | null): string | null {
-    return t?.crest_url || null;
-  }
-
-  initials(t?: Team | null): string {
-    const n = t?.name;
-    if (!n) return '?';
-    return n
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join('')
-      .toUpperCase();
   }
 
   pointsCls(p: number): string {

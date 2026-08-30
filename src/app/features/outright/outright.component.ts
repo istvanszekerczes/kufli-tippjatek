@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner.component';
 import { CountdownComponent } from '../../shared/components/countdown.component';
+import { TeamCrestComponent } from '../../shared/components/team-crest.component';
 import { OutrightService } from '../../core/outright.service';
 import { TournamentService } from '../../core/tournament.service';
 import { OUTRIGHT_POINTS, Team } from '../../core/models';
@@ -15,7 +16,7 @@ import { OUTRIGHT_POINTS, Team } from '../../core/models';
 @Component({
   selector: 'app-outright',
   standalone: true,
-  imports: [LoadingSpinnerComponent, CountdownComponent],
+  imports: [LoadingSpinnerComponent, CountdownComponent, TeamCrestComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mb-5">
@@ -72,13 +73,7 @@ import { OUTRIGHT_POINTS, Team } from '../../core/models';
             [disabled]="!canPick() || busyId() === t.id"
             (click)="choose(t)"
           >
-            <div class="grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-white/5 ring-1 ring-white/10">
-              @if (t.crest_url) {
-                <img [src]="t.crest_url" [alt]="t.name" class="h-10 w-10 object-contain" />
-              } @else {
-                <span class="text-base font-bold text-slate-300">{{ initials(t) }}</span>
-              }
-            </div>
+            <app-team-crest [team]="t" size="lg" />
             <span class="text-sm font-semibold leading-tight">{{ t.name }}</span>
             @if (t.group_label) {
               <span class="text-[11px] text-slate-500">Group {{ t.group_label }}</span>
@@ -131,14 +126,5 @@ export class OutrightComponent implements OnInit {
     } finally {
       this.busyId.set(null);
     }
-  }
-
-  initials(t: Team): string {
-    return t.name
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join('')
-      .toUpperCase();
   }
 }
