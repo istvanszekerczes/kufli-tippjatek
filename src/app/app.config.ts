@@ -16,9 +16,17 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(),
       withInMemoryScrolling({ scrollPositionRestoration: 'top', anchorScrolling: 'enabled' })
     ),
-    provideAppInitializer(async () => {
-      await inject(RuntimeConfigService).load();
-      await inject(AuthService).init();
+    provideAppInitializer(() => {
+      // All inject() calls happen synchronously here, while we are still in the
+      // injection context. Anything after an `await` would throw NG0203.
+      const config = inject(RuntimeConfigService);
+      const auth = inject(AuthService);
+
+      // Only the (fast, local) config load blocks bootstrap; the auth session
+      // check runs in the background — route guards await `AuthService.ready`.
+      return config.load().then(() => {
+        void auth.init();
+      });
     })
   ]
 };

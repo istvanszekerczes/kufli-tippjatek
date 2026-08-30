@@ -23,15 +23,28 @@ export class AuthService {
   );
 
   private readyResolve!: () => void;
+  private readyDone = false;
   readonly ready = new Promise<void>((r) => (this.readyResolve = r));
+
+  private finishInit(): void {
+    if (this.readyDone) return;
+    this.readyDone = true;
+    this.initialized.set(true);
+    this.readyResolve();
+  }
 
   async init(): Promise<void> {
     if (!this.cfg.isConfigured) {
       // No Supabase credentials — let the app render its "not configured" banner.
-      this.initialized.set(true);
-      this.readyResolve();
+      this.finishInit();
       return;
     }
+
+    // Never let a slow / hung network call block the whole app from rendering.
+    const guard = setTimeout(() => {
+      console.warn('[auth] session check timed out — continuing without a session');
+      this.finishInit();
+    }, 6000);
 
     try {
       const { data } = await this.sb.client.auth.getSession();
@@ -43,8 +56,8 @@ export class AuthService {
     } catch (e) {
       console.error('AuthService.init', e);
     } finally {
-      this.initialized.set(true);
-      this.readyResolve();
+      clearTimeout(guard);
+      this.finishInit();
     }
   }
 

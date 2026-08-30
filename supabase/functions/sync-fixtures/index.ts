@@ -10,7 +10,8 @@
 //   FOOTBALL_API_SEASON     season year for api-football          (default: 2025)
 //   CRON_SECRET             shared secret required in x-cron-secret header
 //   SUPABASE_URL            (auto-injected)
-//   SUPABASE_SERVICE_ROLE_KEY (auto-injected)
+//   SUPABASE_SECRET_KEY     new-style secret key  sb_secret_...    (optional)
+//   SUPABASE_SERVICE_ROLE_KEY  legacy service_role key (auto-injected fallback)
 // ============================================================================
 import { createClient, SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders, json } from '../_shared/cors.ts';
@@ -29,9 +30,15 @@ Deno.serve(async (req) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  // Prefer the new-style secret key (sb_secret_...); fall back to the legacy
+  // service_role key that Supabase auto-injects. Either one bypasses RLS.
+  const serviceKey =
+    Deno.env.get('SUPABASE_SECRET_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!supabaseUrl || !serviceKey) {
-    return json({ error: 'SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set' }, 500);
+    return json(
+      { error: 'SUPABASE_URL and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY) must be set' },
+      500
+    );
   }
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 

@@ -47,10 +47,13 @@ Every match locks automatically at kickoff.
 
 1. Sign up at [supabase.com](https://supabase.com) → **New project**. Pick a
    strong database password and a region near your users.
-2. When it's ready, open **Project Settings → API** and copy:
+2. When it's ready, open **Project Settings → API keys** and copy:
    - **Project URL** → `SUPABASE_URL`
-   - **anon / public** key → `SUPABASE_ANON_KEY`
-   - **service_role** key → keep secret, used by the Edge Function only.
+   - **Publishable key** (`sb_publishable_…`, or the legacy **anon** JWT on older
+     projects) → `SUPABASE_ANON_KEY` — this is the browser key, guarded by RLS.
+   - **Secret key** (`sb_secret_…`, or the legacy **service_role** JWT) → keep
+     private; used only by the Edge Function. On older projects you can skip it —
+     Supabase auto-injects `SUPABASE_SERVICE_ROLE_KEY` into functions.
 
 ### Apply the database schema
 
@@ -75,6 +78,10 @@ supabase functions deploy sync-fixtures --no-verify-jwt
 # secrets (mock mode needs only CRON_SECRET):
 supabase secrets set CRON_SECRET="$(openssl rand -hex 32)"
 supabase secrets set FOOTBALL_API_PROVIDER=mock
+
+# New-key projects: give the function a secret key so it can write results.
+# (Skip on older projects — SUPABASE_SERVICE_ROLE_KEY is injected automatically.)
+supabase secrets set SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxx
 ```
 
 In **mock mode** the function advances the seeded fixtures based on the clock, so
@@ -127,7 +134,7 @@ at build time from environment variables — so the same build works anywhere.
 2. Build settings are picked up from [`netlify.toml`](netlify.toml)
    (`npm run build:ci` → publish `dist/ucl-tipp/browser`).
 3. **Site configuration → Environment variables** — add `SUPABASE_URL` and
-   `SUPABASE_ANON_KEY`.
+   `SUPABASE_ANON_KEY` (paste the **publishable** key as the value).
 4. **Deploy**. SPA routing + the `_redirects` file are already configured.
 
 ### Vercel
@@ -135,7 +142,7 @@ at build time from environment variables — so the same build works anywhere.
 1. **Add New → Project**, import the repo. Framework preset: **Other**.
 2. Settings come from [`vercel.json`](vercel.json).
 3. **Settings → Environment Variables** — add `SUPABASE_URL` and
-   `SUPABASE_ANON_KEY`.
+   `SUPABASE_ANON_KEY` (paste the **publishable** key as the value).
 4. **Deploy.**
 
 After the first deploy, set your production URL as **Site URL** and add it to

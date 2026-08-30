@@ -7,8 +7,12 @@
  *   1. process.env  (Vercel / Netlify / CI inject these)
  *   2. a local `.env` file in the project root (for `npm start`)
  *
- * Accepted keys:  SUPABASE_URL, SUPABASE_ANON_KEY
- *   (NG_APP_SUPABASE_URL / NG_APP_SUPABASE_ANON_KEY also accepted)
+ * Accepted keys (first non-empty wins):
+ *   SUPABASE_URL            | NG_APP_SUPABASE_URL
+ *   SUPABASE_ANON_KEY       | SUPABASE_PUBLISHABLE_KEY | NG_APP_SUPABASE_ANON_KEY
+ *
+ * The "anon" / "publishable" key is the browser key — safe to ship, guarded by
+ * Row Level Security. Never pass the secret / service_role key here.
  */
 const fs = require('fs');
 const path = require('path');
@@ -46,8 +50,20 @@ const pick = (...keys) => {
 
 const config = {
   supabaseUrl: pick('SUPABASE_URL', 'NG_APP_SUPABASE_URL'),
-  supabaseAnonKey: pick('SUPABASE_ANON_KEY', 'NG_APP_SUPABASE_ANON_KEY')
+  supabaseAnonKey: pick(
+    'SUPABASE_ANON_KEY',
+    'SUPABASE_PUBLISHABLE_KEY',
+    'NG_APP_SUPABASE_ANON_KEY'
+  )
 };
+
+if (/^sb_secret_/.test(config.supabaseAnonKey)) {
+  console.error(
+    '[set-env] REFUSING to build: a Supabase SECRET key was passed as the ' +
+      'browser key. Use the publishable / anon key for the frontend.'
+  );
+  process.exit(1);
+}
 
 const target = path.join(root, 'public', 'config.json');
 fs.mkdirSync(path.dirname(target), { recursive: true });
