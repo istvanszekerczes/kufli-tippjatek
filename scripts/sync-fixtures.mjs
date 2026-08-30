@@ -1,17 +1,19 @@
 /**
  * One command to pull real Champions League fixtures + scores into Supabase.
- * No Supabase CLI, no Edge Function deploy required.
+ * No Supabase CLI, no Edge Function deploy, and (with the default provider) no
+ * API key at all.
  *
- *   npm run sync
+ *   npm run sync                 # pull fixtures/scores
+ *   npm run sync -- --reset      # wipe demo data first, then pull
  *
  * Reads (from process.env, then a local .env):
  *   SUPABASE_URL
  *   SUPABASE_SECRET_KEY        (sb_secret_...)  — or SUPABASE_SERVICE_ROLE_KEY
- *   FOOTBALL_API_PROVIDER      football-data | api-football | mock   (default: mock)
- *   FOOTBALL_API_KEY           provider key (not needed for mock)
- *   FOOTBALL_API_SEASON        e.g. 2026      (api-football only, default 2026)
+ *   FOOTBALL_API_PROVIDER      uefa | football-data | api-football | mock  (default: uefa)
+ *   FOOTBALL_API_KEY           provider key (uefa + mock need none)
+ *   FOOTBALL_API_SEASON        uefa -> seasonYear e.g. 2027; api-football -> 2026
  *
- * Flags: --provider=<p>  --season=<y>  --key=<k>
+ * Flags: --reset  --provider=<p>  --season=<y>  --key=<k>
  *
  * Run it on a schedule with the GitHub Action in .github/workflows/.
  */
@@ -49,9 +51,12 @@ const args = Object.fromEntries(
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SECRET_KEY =
   process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const provider = args.provider || process.env.FOOTBALL_API_PROVIDER || 'mock';
+const provider = args.provider || process.env.FOOTBALL_API_PROVIDER || 'uefa';
 const apiKey = args.key || process.env.FOOTBALL_API_KEY || '';
-const season = args.season || process.env.FOOTBALL_API_SEASON || '2026';
+const season =
+  args.season ||
+  process.env.FOOTBALL_API_SEASON ||
+  (provider === 'uefa' ? '2027' : '2026');
 
 if (!SUPABASE_URL || !SECRET_KEY) {
   console.error(
@@ -65,10 +70,29 @@ if (!/^sb_secret_|^ey/.test(SECRET_KEY)) {
 }
 
 const db = createClient(SUPABASE_URL, SECRET_KEY, { auth: { persistSession: false } });
+const NIL = '00000000-0000-0000-0000-000000000000';
 
-console.log(`[sync] provider=${provider}${provider === 'api-football' ? ` season=${season}` : ''}`);
+async function reset() {
+  console.log('[sync] --reset: clearing demo fixtures, teams and predictions…');
+  for (const t of ['predictions', 'outright_predictions']) {
+    const { error } = await db.from(t).delete().neq('id', NIL);
+    if (error) throw new Error(`${t}: ${error.message}`);
+  }
+  let { error } = await db
+    .from('tournament_config')
+    .update({ champion_team_id: null, knockout_betting: false, group_stage_betting: true })
+    .eq('id', 1);
+  if (error) throw new Error(`tournament_config: ${error.message}`);
+  ({ error } = await db.from('matches').delete().neq('id', NIL));
+  if (error) throw new Error(`matches: ${error.message}`);
+  ({ error } = await db.from('teams').delete().neq('id', NIL));
+  if (error) throw new Error(`teams: ${error.message}`);
+}
+
+console.log(`[sync] provider=${provider}${provider === 'mock' ? '' : ` season=${season}`}`);
 
 try {
+  if (args.reset) await reset();
   const result = await runSync(db, { provider, apiKey, season });
   console.log('[sync] done:', JSON.stringify(result));
   process.exit(0);

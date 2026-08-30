@@ -11,7 +11,7 @@ const FULL_TIME_MS = 115 * 60 * 1000;
  * @param {{ provider?: string, apiKey?: string, season?: string }} opts
  */
 export async function runSync(db, opts = {}) {
-  const provider = (opts.provider || 'mock').toLowerCase();
+  const provider = (opts.provider || 'uefa').toLowerCase();
   if (provider === 'mock') return { provider, ...(await runMock(db)) };
 
   const fixtures = await fetchFixtures(provider, opts.apiKey, opts.season);

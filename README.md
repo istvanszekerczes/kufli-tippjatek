@@ -8,8 +8,9 @@ crest.
   static site to **Vercel** or **Netlify** (free tier).
 - **Backend:** **Supabase** — Postgres, Auth, Row Level Security, Realtime, and
   optional Edge Functions (free tier).
-- **Fixtures:** real Champions League data via `npm run sync` (football-data.org
-  or API-Football), or a self-advancing `mock` mode.
+- **Fixtures:** real Champions League data via `npm run sync` — the official
+  UEFA feed (no API key), with football-data.org / API-Football as alternatives,
+  plus a self-advancing `mock` mode.
 - **Cost to run:** **$0** to start.
 
 ---
@@ -72,43 +73,36 @@ The current Champions League format is a **36-team league phase** (8 games each)
 → knockout play-offs → Round of 16 → Final. `npm run sync` pulls the real draw
 and keeps scores/status up to date.
 
-### Get a free API key
-
-| Provider | Free tier | Get a key |
-| --- | --- | --- |
-| **football-data.org** (recommended) | ~10 req/min, full CL | [football-data.org/client/register](https://www.football-data.org/client/register) |
-| **API-Football** (api-sports.io) | 100 req/day | [dashboard.api-football.com](https://dashboard.api-football.com/register) |
-
-### Wire it up
+The default provider is **`uefa`** — the official UEFA match feed. **No API key,
+no signup.**
 
 ```bash
-cp .env.example .env      # then fill in the values below
+cp .env.example .env
 ```
 
 ```ini
 SUPABASE_URL=https://<ref>.supabase.co
 SUPABASE_SECRET_KEY=sb_secret_...
-FOOTBALL_API_PROVIDER=football-data      # or api-football
-FOOTBALL_API_KEY=<your token>
-FOOTBALL_API_SEASON=2026                 # api-football only (start year of the season)
+FOOTBALL_API_PROVIDER=uefa
+FOOTBALL_API_SEASON=2027          # the year the final is played
 ```
-
-Then:
 
 ```bash
-# one-time: clear the demo tournament so real data isn't mixed in
-#   -> run supabase/reset-fixtures.sql in the SQL editor
-
 npm install
-npm run sync        # pulls teams + all fixtures into Supabase
+npm run sync -- --reset          # wipe the demo, then load the real season
 ```
 
-Re-run `npm run sync` any time; it only writes what changed. Automate it in
-[§4](#4-keep-scores-updating).
+`--reset` clears the demo tournament first. Afterwards just `npm run sync` — it
+only writes what changed. Automate it in [§4](#4-keep-scores-updating).
 
-> Prefer to try it without an API key first? Leave `FOOTBALL_API_PROVIDER=mock`,
-> run [`supabase/seed.sql`](supabase/seed.sql) for a 16-team demo bracket, and
-> `npm run sync` will advance those fixtures by the clock.
+### Other providers (optional)
+
+| `FOOTBALL_API_PROVIDER` | Key | Notes |
+| --- | --- | --- |
+| `uefa` | none | official, current season, **default** |
+| `mock` | none | self-advancing demo — needs [`supabase/seed.sql`](supabase/seed.sql) |
+| `football-data` | [free token](https://www.football-data.org/client/register) | `X-Auth-Token` |
+| `api-football` | [free key](https://dashboard.api-football.com/register) | 100 req/day; `FOOTBALL_API_SEASON` = start year (2026) |
 
 ---
 
@@ -150,15 +144,16 @@ set the champion).
 `npm run sync` needs to run on a schedule. Easiest: the included GitHub Action.
 
 [`.github/workflows/sync-fixtures.yml`](.github/workflows/sync-fixtures.yml) runs
-every 10 minutes. Add repo secrets (**Settings → Secrets and variables → Actions**):
+every 10 minutes. With the default `uefa` provider you only need two repo secrets
+(**Settings → Secrets and variables → Actions**):
 
 | Secret | Value |
 | --- | --- |
 | `SUPABASE_URL` | `https://<ref>.supabase.co` |
 | `SUPABASE_SECRET_KEY` | `sb_secret_…` |
-| `FOOTBALL_API_PROVIDER` | `football-data` (or `api-football`) |
-| `FOOTBALL_API_KEY` | your token |
-| `FOOTBALL_API_SEASON` | `2026` (api-football only) |
+
+*(Only if you switch providers: also add `FOOTBALL_API_PROVIDER`, `FOOTBALL_API_KEY`
+and `FOOTBALL_API_SEASON`.)*
 
 Alternatives: any cron runner that can `node scripts/sync-fixtures.mjs`, or the
 **Supabase Edge Function** — deploy [`supabase/functions/sync-fixtures`](supabase/functions/sync-fixtures)

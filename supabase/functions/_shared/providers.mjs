@@ -17,6 +17,90 @@
 //   }
 
 // ---------------------------------------------------------------------------
+// UEFA official match feed  —  https://match.uefa.com/  (competitionId 1 = UCL)
+// No API key. `season` here is the UEFA seasonYear = the year the final is
+// played (2026/27 season -> 2027).
+// ---------------------------------------------------------------------------
+const UEFA_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
+
+function uefaStage(round) {
+  const type = round?.metaData?.type || '';
+  const name = (round?.metaData?.name || '').toLowerCase();
+  if (type === 'GROUP_STANDINGS' || name.includes('league phase') || name.includes('group')) return 'group';
+  if (type.includes('PLAY_OFF') || name.includes('play-off') || name.includes('play off')) return 'playoff';
+  if (type === 'ROUND_OF_16' || name.includes('round of 16') || name.includes('last 16')) return 'round_of_16';
+  if (type === 'QUARTER_FINALS' || name.includes('quarter')) return 'quarter_final';
+  if (type === 'SEMI_FINALS' || name.includes('semi')) return 'semi_final';
+  if (type === 'FINAL' || name === 'final') return 'final';
+  return 'group';
+}
+
+function uefaStatus(status) {
+  const s = (status || '').toUpperCase();
+  if (s === 'FINISHED') return 'finished';
+  if (s.startsWith('LIVE') || s === 'PAUSED' || s === 'HALFTIME') return 'live';
+  return 'upcoming';
+}
+
+function uefaTeam(t) {
+  if (!t || t.isPlaceHolder) {
+    return { api_id: null, name: 'TBD', short_name: null, crest_url: null, group_label: null };
+  }
+  const id = Number(t.id);
+  return {
+    api_id: Number.isFinite(id) ? id : null,
+    name: t.internationalName || t.translations?.displayName?.EN || 'TBD',
+    short_name: t.translations?.shortName?.EN || t.teamCode || null,
+    crest_url: t.logoUrl || t.mediumLogoUrl || t.bigLogoUrl || null,
+    group_label: null
+  };
+}
+
+export async function fetchUefa(season) {
+  const seasonYear = String(season || '2027');
+  const limit = 500;
+  let offset = 0;
+  const all = [];
+  for (let page = 0; page < 6; page++) {
+    const url =
+      `https://match.uefa.com/v5/matches?competitionId=1&seasonYear=${seasonYear}` +
+      `&phase=ALL&limit=${limit}&offset=${offset}`;
+    const res = await fetch(url, { headers: { accept: 'application/json', 'user-agent': UEFA_UA } });
+    if (!res.ok) throw new Error(`uefa.com ${res.status}: ${await res.text()}`);
+    const batch = await res.json();
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    all.push(...batch);
+    if (batch.length < limit) break;
+    offset += limit;
+  }
+
+  return all
+    // keep only the competition proper — drop July/August qualifiers
+    .filter((m) => (m.round?.phase || '').toUpperCase() === 'TOURNAMENT')
+    .map((m) => {
+      const stage = uefaStage(m.round);
+      const kickoff =
+        m.kickOffTime?.dateTime || m.matchday?.dateFrom || m.round?.dateFrom || null;
+      const hs = m.score?.total?.home ?? m.score?.regular?.home ?? null;
+      const as = m.score?.total?.away ?? m.score?.regular?.away ?? null;
+      return {
+        api_id: Number(m.id),
+        stage,
+        round: stage === 'group' ? null : m.round?.metaData?.name || null,
+        matchday: stage === 'group' ? Number(m.matchday?.sequenceNumber) || null : null,
+        kickoff_at: kickoff,
+        status: uefaStatus(m.status),
+        home_score: hs,
+        away_score: as,
+        home: uefaTeam(m.homeTeam),
+        away: uefaTeam(m.awayTeam)
+      };
+    })
+    .filter((f) => f.kickoff_at); // a fixture with no date at all can't be stored
+}
+
+// ---------------------------------------------------------------------------
 // football-data.org  —  https://www.football-data.org/  (competition CL)
 // Free tier: register for a token, ~10 requests/minute.
 // ---------------------------------------------------------------------------
@@ -139,6 +223,8 @@ export async function fetchApiFootball(apiKey, season) {
 // ---------------------------------------------------------------------------
 export async function fetchFixtures(provider, apiKey, season) {
   switch ((provider || '').toLowerCase()) {
+    case 'uefa':
+      return fetchUefa(season || '2027');
     case 'football-data':
       if (!apiKey) throw new Error('FOOTBALL_API_KEY is required for provider "football-data"');
       return fetchFootballData(apiKey);
@@ -146,6 +232,6 @@ export async function fetchFixtures(provider, apiKey, season) {
       if (!apiKey) throw new Error('FOOTBALL_API_KEY is required for provider "api-football"');
       return fetchApiFootball(apiKey, season || '2026');
     default:
-      throw new Error(`Unknown provider "${provider}" (use football-data | api-football | mock)`);
+      throw new Error(`Unknown provider "${provider}" (use uefa | football-data | api-football | mock)`);
   }
 }

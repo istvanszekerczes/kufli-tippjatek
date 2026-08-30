@@ -1,14 +1,15 @@
 name: Sync fixtures
 
-# Pulls Champions League fixtures + live scores into Supabase every 10 minutes.
-# No Supabase CLI / Edge Function needed — this just runs `npm run sync`.
+# Pulls Champions League fixtures + live scores into Supabase every 10 minutes
+# via `npm run sync`. With the default `uefa` provider no football API key is
+# needed — just two Supabase secrets.
 #
-# Add these repository secrets (Settings → Secrets and variables → Actions):
-#   SUPABASE_URL              https://<ref>.supabase.co
-#   SUPABASE_SECRET_KEY       sb_secret_...   (or a service_role key)
-#   FOOTBALL_API_PROVIDER     football-data | api-football
-#   FOOTBALL_API_KEY          your provider key
-#   FOOTBALL_API_SEASON       2026            (only needed for api-football)
+# Repository secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_URL          https://<ref>.supabase.co          (required)
+#   SUPABASE_SECRET_KEY   sb_secret_...                      (required)
+#   FOOTBALL_API_PROVIDER uefa | football-data | api-football (optional, default uefa)
+#   FOOTBALL_API_KEY      only for football-data / api-football
+#   FOOTBALL_API_SEASON   optional (uefa: 2027, api-football: 2026)
 
 on:
   schedule:

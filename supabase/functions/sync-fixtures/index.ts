@@ -6,9 +6,9 @@
 // Auth: send header  x-cron-secret: <CRON_SECRET>
 //
 // Secrets (`supabase secrets set ...`):
-//   FOOTBALL_API_PROVIDER   mock | football-data | api-football   (default: mock)
-//   FOOTBALL_API_KEY        provider API key (not needed for mock)
-//   FOOTBALL_API_SEASON     season year for api-football          (default: 2026)
+//   FOOTBALL_API_PROVIDER   uefa | football-data | api-football | mock   (default: uefa)
+//   FOOTBALL_API_KEY        provider API key (uefa + mock need none)
+//   FOOTBALL_API_SEASON     uefa -> seasonYear (2027); api-football -> start year (2026)
 //   CRON_SECRET             required value of the x-cron-secret header
 //   SUPABASE_URL                 (auto-injected)
 //   SUPABASE_SECRET_KEY         sb_secret_... (preferred)
@@ -42,10 +42,11 @@ Deno.serve(async (req) => {
   const db = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
   try {
+    const provider = Deno.env.get('FOOTBALL_API_PROVIDER') ?? 'uefa';
     const result = await runSync(db, {
-      provider: Deno.env.get('FOOTBALL_API_PROVIDER') ?? 'mock',
+      provider,
       apiKey: Deno.env.get('FOOTBALL_API_KEY') ?? '',
-      season: Deno.env.get('FOOTBALL_API_SEASON') ?? '2026'
+      season: Deno.env.get('FOOTBALL_API_SEASON') ?? (provider === 'uefa' ? '2027' : '2026')
     });
     return json({ ok: true, at: new Date().toISOString(), ...result });
   } catch (err) {
