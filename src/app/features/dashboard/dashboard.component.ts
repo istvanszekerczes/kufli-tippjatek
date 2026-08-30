@@ -35,7 +35,7 @@ type Filter = 'open' | 'live' | 'upcoming' | 'finished' | 'all';
       <img
         src="/kufli-logo.png"
         alt=""
-        class="h-16 w-16 shrink-0 drop-shadow-[0_6px_28px_rgba(47,181,110,0.35)] sm:h-20 sm:w-20"
+        class="h-20 w-20 shrink-0 drop-shadow-[0_6px_28px_rgba(47,181,110,0.35)] sm:h-24 sm:w-24"
       />
       <div>
         <h1 class="font-display text-2xl font-extrabold leading-tight sm:text-3xl">
