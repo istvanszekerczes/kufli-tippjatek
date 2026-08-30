@@ -94,28 +94,32 @@ type Filter = 'open' | 'live' | 'upcoming' | 'finished' | 'all';
     <!-- narrow-down filters so you don't have to scroll -->
     <div class="mb-5 flex flex-wrap items-center gap-2">
       @if (matchdays().length) {
-        <div class="flex flex-wrap gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
-          <button
-            class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition"
-            [class]="matchdayFilter() === 'all' ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white'"
-            (click)="matchdayFilter.set('all')"
+        <div class="no-scrollbar w-full overflow-x-auto sm:w-auto">
+          <div
+            class="flex w-max gap-1 rounded-xl border border-white/10 bg-white/5 p-1 sm:w-auto sm:flex-wrap"
           >
-            All rounds
-          </button>
-          @for (md of matchdays(); track md) {
             <button
-              class="rounded-lg px-2.5 py-1.5 text-xs font-semibold tabular-nums transition"
-              [class]="matchdayFilter() === md ? 'bg-pitch-500 text-night-950' : 'text-slate-300 hover:text-white'"
-              (click)="matchdayFilter.set(md)"
+              class="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition"
+              [class]="matchdayFilter() === 'all' ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white'"
+              (click)="matchdayFilter.set('all')"
             >
-              MD{{ md }}
+              All<span class="hidden sm:inline"> rounds</span>
             </button>
-          }
+            @for (md of matchdays(); track md) {
+              <button
+                class="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold tabular-nums transition"
+                [class]="matchdayFilter() === md ? 'bg-pitch-500 text-night-950' : 'text-slate-300 hover:text-white'"
+                (click)="matchdayFilter.set(md)"
+              >
+                <span class="hidden sm:inline">MD</span>{{ md }}
+              </button>
+            }
+          </div>
         </div>
       }
 
       <input
-        class="input !w-auto min-w-[10rem] flex-1 !py-1.5 text-xs"
+        class="input min-w-[10rem] flex-1 !py-1.5 text-xs sm:!w-auto"
         placeholder="Filter by team…"
         [value]="teamQuery()"
         (input)="teamQuery.set($any($event.target).value)"
@@ -125,7 +129,7 @@ type Filter = 'open' | 'live' | 'upcoming' | 'finished' | 'all';
         <button class="btn-ghost !px-3 !py-1.5 text-xs" (click)="clearExtra()">Clear</button>
       }
       <span class="ml-auto shrink-0 text-xs text-slate-500">
-        {{ shownCount() }} match{{ shownCount() === 1 ? '' : 'es' }} shown
+        {{ shownCount() }} shown
       </span>
     </div>
 

@@ -35,6 +35,14 @@ body {
   border-radius: 9999px;
 }
 
+/* horizontal chip rows: scroll without showing a bar */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @layer components {
   .card {
     @apply rounded-2xl border border-white/10 bg-night-900/70 backdrop-blur-sm shadow-xl shadow-black/30;
