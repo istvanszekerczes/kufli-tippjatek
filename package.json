@@ -1,7 +1,7 @@
 {
-  "name": "ucl-tipp",
+  "name": "kufli-tippjatek",
   "version": "1.0.0",
-  "description": "Champions League tipping / prediction game — Angular + Supabase",
+  "description": "Kufli TippJáték — Champions League tipping / prediction game (Angular + Supabase)",
   "private": true,
   "packageManager": "npm@10.9.2",
   "engines": {
@@ -14,6 +14,7 @@
     "build": "npm run config && ng build",
     "build:ci": "node scripts/set-env.js && ng build",
     "watch": "ng build --watch --configuration development",
+    "sync": "node scripts/sync-fixtures.mjs",
     "lint": "ng lint"
   },
   "dependencies": {

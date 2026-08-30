@@ -1,13 +1,18 @@
 name: Sync fixtures
 
-# Pulls Champions League fixtures / live scores into Supabase on a schedule.
-# Add two repository secrets (Settings -> Secrets and variables -> Actions):
-#   SUPABASE_FUNCTIONS_URL  e.g. https://abcdefgh.supabase.co/functions/v1
-#   CRON_SECRET             the same value you set with `supabase secrets set CRON_SECRET=...`
+# Pulls Champions League fixtures + live scores into Supabase every 10 minutes.
+# No Supabase CLI / Edge Function needed — this just runs `npm run sync`.
+#
+# Add these repository secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_URL              https://<ref>.supabase.co
+#   SUPABASE_SECRET_KEY       sb_secret_...   (or a service_role key)
+#   FOOTBALL_API_PROVIDER     football-data | api-football
+#   FOOTBALL_API_KEY          your provider key
+#   FOOTBALL_API_SEASON       2026            (only needed for api-football)
 
 on:
   schedule:
-    - cron: '*/10 * * * *' # every 10 minutes
+    - cron: '*/10 * * * *'
   workflow_dispatch: {}
 
 concurrency:
@@ -18,13 +23,16 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Call sync-fixtures Edge Function
-        run: |
-          curl --fail --silent --show-error --location \
-            -X POST "${SUPABASE_FUNCTIONS_URL%/}/sync-fixtures" \
-            -H "x-cron-secret: ${CRON_SECRET}" \
-            -H "Content-Type: application/json" \
-            -d '{}'
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run sync
         env:
-          SUPABASE_FUNCTIONS_URL: ${{ secrets.SUPABASE_FUNCTIONS_URL }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          FOOTBALL_API_PROVIDER: ${{ secrets.FOOTBALL_API_PROVIDER }}
+          FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
+          FOOTBALL_API_SEASON: ${{ secrets.FOOTBALL_API_SEASON }}

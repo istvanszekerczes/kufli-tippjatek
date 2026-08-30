@@ -1,9 +1,11 @@
 -- ==========================================================================
 -- setup.sql — full schema in one file (concatenation of migrations/*.sql).
 -- Paste into the Supabase SQL editor and run, OR use `supabase db push`.
--- Run seed.sql afterwards for the 16-team demo tournament (optional).
+-- Run seed.sql afterwards for the demo tournament (skip it if you'll load
+-- real fixtures with 'npm run sync').
 -- ==========================================================================
 
+-- >>> migrations/20260101000001_schema.sql
 -- ============================================================================
 -- 0001_schema.sql — core tables, enums, indexes
 -- ============================================================================
@@ -14,8 +16,9 @@ create extension if not exists pgcrypto;
 -- ---- enums -----------------------------------------------------------------
 do $$ begin
   create type public.match_stage as enum
-    ('group', 'round_of_16', 'quarter_final', 'semi_final', 'final');
+    ('group', 'playoff', 'round_of_16', 'quarter_final', 'semi_final', 'final');
 exception when duplicate_object then null; end $$;
+-- Note: an earlier install without 'playoff' is upgraded by migration 0006.
 
 do $$ begin
   create type public.match_status as enum ('upcoming', 'live', 'finished');
@@ -113,6 +116,7 @@ drop trigger if exists trg_touch_predictions on public.predictions;
 create trigger trg_touch_predictions before update on public.predictions
   for each row execute function public.touch_updated_at();
 
+-- >>> migrations/20260101000002_scoring.sql
 -- ============================================================================
 -- 0002_scoring.sql — scoring rules, automatic scoring triggers, helpers
 -- ============================================================================
@@ -322,6 +326,7 @@ drop trigger if exists trg_protect_profile on public.profiles;
 create trigger trg_protect_profile before update on public.profiles
   for each row execute function public.protect_profile_columns();
 
+-- >>> migrations/20260101000003_rls.sql
 -- ============================================================================
 -- 0003_rls.sql — Row Level Security
 -- ============================================================================
@@ -429,6 +434,7 @@ grant execute on function
   public.calc_points(int, int, int, int)
   to anon, authenticated;
 
+-- >>> migrations/20260101000004_views.sql
 -- ============================================================================
 -- 0004_views.sql — leaderboard
 -- ============================================================================
@@ -463,6 +469,7 @@ left join outr on outr.user_id = pr.id;
 
 grant select on public.leaderboard to authenticated, anon;
 
+-- >>> migrations/20260101000005_realtime.sql
 -- ============================================================================
 -- 0005_realtime.sql — publish row changes the frontend subscribes to
 -- ============================================================================
@@ -481,3 +488,18 @@ begin
     end if;
   end loop;
 end $$;
+
+-- >>> migrations/20260101000006_playoff_stage.sql
+-- ============================================================================
+-- 0006_playoff_stage.sql — add the "Knockout Play-off" round to match_stage.
+--
+-- The current Champions League format has a league phase (36 teams, one table)
+-- followed by a knockout play-off round for the teams finishing 9th–24th, then
+-- Round of 16 → Final. This adds that play-off round to the enum.
+--
+-- Kept in its own migration: a new enum value cannot be used in the same
+-- transaction that adds it.
+-- ============================================================================
+
+alter type public.match_stage add value if not exists 'playoff' before 'round_of_16';
+

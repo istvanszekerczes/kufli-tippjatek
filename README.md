@@ -1,19 +1,16 @@
-# ⚽ UCL Tipp — Champions League Prediction Game
+# ⚽ Kufli TippJáték — Champions League Prediction Game
 
 A full-stack tipping game for the UEFA Champions League. Predict scorelines, call
-the outright winner, and climb a live leaderboard. Dark, football-themed UI.
+the outright winner, and climb a live leaderboard. Dark UI themed on the Kufli
+crest.
 
 - **Frontend:** Angular 21 (standalone + signals) · Tailwind CSS · deploys as a
-  static site to **Netlify** or **Vercel** (free tier).
-- **Backend:** **Supabase** — Postgres, Auth, Row Level Security, Edge Functions,
-  Realtime (free tier).
-- **Cost to run:** **$0** to start. No server to manage.
-
-> **Why not Angular + Java/Spring?** A Spring service would need a paid always-on
-> host and would re-implement what Supabase already gives you for free: auth,
-> a Postgres database, row-level authorization, scheduled/serverless functions,
-> and websockets. The scoring engine lives in the database as a trigger, so it
-> runs the instant a result lands — no backend process required.
+  static site to **Vercel** or **Netlify** (free tier).
+- **Backend:** **Supabase** — Postgres, Auth, Row Level Security, Realtime, and
+  optional Edge Functions (free tier).
+- **Fixtures:** real Champions League data via `npm run sync` (football-data.org
+  or API-Football), or a self-advancing `mock` mode.
+- **Cost to run:** **$0** to start.
 
 ---
 
@@ -30,183 +27,156 @@ using `public.calc_points()` (mutually exclusive, highest match wins):
 | **1** | Correct winner, or a correctly predicted draw | `2–1` → `3–0` |
 | **0** | Wrong outcome | `2–1` → `0–1` |
 
-**Outright winner:** pick the champion before kickoff of the first match — **15
+**Outright winner:** pick the champion before the first match kicks off — **15
 points** if correct. Scored automatically when an admin sets the champion.
 
 **Phases** are controlled from the in-app Admin console (`/admin`):
 
 1. **Pre-tournament** — only the outright market is open.
-2. **Group stage** — predictions open for group matches (`group_stage_betting`).
-3. **Knockout stage** — Round of 16 → Final unlock (`knockout_betting`).
+2. **League phase** — predictions open for the 36-team league-phase matches.
+3. **Knockout stage** — Play-off round → Round of 16 → Final unlock together.
 
 Every match locks automatically at kickoff.
 
 ---
 
-## 1. Create the Supabase project
+## 1. Supabase project
 
-1. Sign up at [supabase.com](https://supabase.com) → **New project**. Pick a
-   strong database password and a region near your users.
-2. When it's ready, open **Project Settings → API keys** and copy:
+1. [supabase.com](https://supabase.com) → **New project**.
+2. **Project Settings → API keys** — copy:
    - **Project URL** → `SUPABASE_URL`
-   - **Publishable key** (`sb_publishable_…`, or the legacy **anon** JWT on older
-     projects) → `SUPABASE_ANON_KEY` — this is the browser key, guarded by RLS.
-   - **Secret key** (`sb_secret_…`, or the legacy **service_role** JWT) → keep
-     private; used only by the Edge Function. On older projects you can skip it —
-     Supabase auto-injects `SUPABASE_SERVICE_ROLE_KEY` into functions.
+   - **Publishable key** (`sb_publishable_…`) → `SUPABASE_ANON_KEY` (browser key, RLS-guarded)
+   - **Secret key** (`sb_secret_…`) → keep private; used only by the sync job.
 
-### Apply the database schema
+### Apply the schema
 
-**Option A — SQL editor (no tooling):** open **SQL Editor**, paste the contents
-of [`supabase/setup.sql`](supabase/setup.sql), run it. Then (optional, for a
-ready-to-play demo) paste and run [`supabase/seed.sql`](supabase/seed.sql).
+**SQL editor:** paste [`supabase/setup.sql`](supabase/setup.sql) and run.
+*(Already ran an earlier version? Also run
+[`supabase/migrations/20260101000006_playoff_stage.sql`](supabase/migrations/20260101000006_playoff_stage.sql)
+— it adds the knockout play-off round.)*
 
-**Option B — Supabase CLI:**
+**or CLI:** `supabase link --project-ref <ref> && supabase db push`
+
+### Auth settings (do these)
+
+- **Authentication → URL Configuration → Site URL**: your deployed URL.
+  Add `https://<your-domain>/**` to **Redirect URLs**.
+- **Authentication → Sign In / Providers → Email → uncheck "Confirm email"** —
+  Supabase's free mailer only sends ~3–4/hour, which breaks signup for a group.
+
+---
+
+## 2. Load real fixtures
+
+The current Champions League format is a **36-team league phase** (8 games each)
+→ knockout play-offs → Round of 16 → Final. `npm run sync` pulls the real draw
+and keeps scores/status up to date.
+
+### Get a free API key
+
+| Provider | Free tier | Get a key |
+| --- | --- | --- |
+| **football-data.org** (recommended) | ~10 req/min, full CL | [football-data.org/client/register](https://www.football-data.org/client/register) |
+| **API-Football** (api-sports.io) | 100 req/day | [dashboard.api-football.com](https://dashboard.api-football.com/register) |
+
+### Wire it up
 
 ```bash
-npm i -g supabase
-supabase link --project-ref <your-project-ref>
-supabase db push          # applies supabase/migrations/*
-psql "$(supabase db url)" -f supabase/seed.sql   # optional demo data
+cp .env.example .env      # then fill in the values below
 ```
 
-### Deploy the fixtures Edge Function
+```ini
+SUPABASE_URL=https://<ref>.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_...
+FOOTBALL_API_PROVIDER=football-data      # or api-football
+FOOTBALL_API_KEY=<your token>
+FOOTBALL_API_SEASON=2026                 # api-football only (start year of the season)
+```
+
+Then:
 
 ```bash
-supabase functions deploy sync-fixtures --no-verify-jwt
+# one-time: clear the demo tournament so real data isn't mixed in
+#   -> run supabase/reset-fixtures.sql in the SQL editor
 
-# secrets (mock mode needs only CRON_SECRET):
-supabase secrets set CRON_SECRET="$(openssl rand -hex 32)"
-supabase secrets set FOOTBALL_API_PROVIDER=mock
-
-# New-key projects: give the function a secret key so it can write results.
-# (Skip on older projects — SUPABASE_SERVICE_ROLE_KEY is injected automatically.)
-supabase secrets set SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxx
+npm install
+npm run sync        # pulls teams + all fixtures into Supabase
 ```
 
-In **mock mode** the function advances the seeded fixtures based on the clock, so
-the game plays itself for testing. To use real data, see
-[§5](#5-switch-to-a-live-football-api).
+Re-run `npm run sync` any time; it only writes what changed. Automate it in
+[§4](#4-keep-scores-updating).
 
-> **Faster testing:** in **Authentication → Sign In / Providers → Email**, turn
-> **Confirm email** off so new accounts log in immediately. Turn it back on for
-> production.
+> Prefer to try it without an API key first? Leave `FOOTBALL_API_PROVIDER=mock`,
+> run [`supabase/seed.sql`](supabase/seed.sql) for a 16-team demo bracket, and
+> `npm run sync` will advance those fixtures by the clock.
 
-### Make yourself an admin
+---
 
-Register in the app first (so your profile row exists), then in the SQL editor:
+## 3. Deploy the site
+
+The repo already ships [`vercel.json`](vercel.json) and
+[`netlify.toml`](netlify.toml). The Supabase URL + publishable key are also
+committed in `src/environments/environment.ts`, so it works even before you set
+host env vars.
+
+### Vercel
+
+1. [vercel.com/new](https://vercel.com/new) → import the repo → framework preset **Other**.
+2. *(optional)* add `SUPABASE_URL` / `SUPABASE_ANON_KEY` env vars to override the
+   committed values.
+3. **Deploy** → share the `*.vercel.app` URL.
+
+### Netlify
+
+Same idea: [app.netlify.com](https://app.netlify.com) → Add site → Import → pick
+the repo. Build settings come from `netlify.toml`.
+
+### Become an admin
+
+Register in the app, then in the SQL editor:
 
 ```sql
 update public.profiles set is_admin = true
 where id = (select id from auth.users where email = 'you@example.com');
 ```
 
-Reload the app — an **Admin** link appears in the nav.
+Reload → the **Admin** tab appears (open/close phases, enter results manually,
+set the champion).
 
 ---
 
-## 2. Run locally
+## 4. Keep scores updating
 
-```bash
-git clone <this repo> && cd ucl-tipp
-npm install
-cp .env.example .env          # fill in SUPABASE_URL and SUPABASE_ANON_KEY
-npm start                     # -> http://localhost:4200
-```
-
-`npm start` runs `scripts/set-env.js` first, which writes `public/config.json`
-from your `.env` (or real environment variables). You can also just paste the two
-values into `src/environments/environment.ts` for local hacking.
-
-Add `http://localhost:4200` under **Supabase → Authentication → URL
-Configuration → Redirect URLs**.
-
----
-
-## 3. Deploy the frontend
-
-The app reads Supabase credentials at **runtime** from `/config.json`, generated
-at build time from environment variables — so the same build works anywhere.
-
-### Netlify
-
-1. **Add new site → Import an existing project**, pick the repo.
-2. Build settings are picked up from [`netlify.toml`](netlify.toml)
-   (`npm run build:ci` → publish `dist/ucl-tipp/browser`).
-3. **Site configuration → Environment variables** — add `SUPABASE_URL` and
-   `SUPABASE_ANON_KEY` (paste the **publishable** key as the value).
-4. **Deploy**. SPA routing + the `_redirects` file are already configured.
-
-### Vercel
-
-1. **Add New → Project**, import the repo. Framework preset: **Other**.
-2. Settings come from [`vercel.json`](vercel.json).
-3. **Settings → Environment Variables** — add `SUPABASE_URL` and
-   `SUPABASE_ANON_KEY` (paste the **publishable** key as the value).
-4. **Deploy.**
-
-After the first deploy, set your production URL as **Site URL** and add it to
-**Redirect URLs** in Supabase Auth, then update `site_url` in
-[`supabase/config.toml`](supabase/config.toml).
-
----
-
-## 4. Keep fixtures & scores updating
-
-The Edge Function needs to be called on a schedule. Pick one:
-
-### GitHub Actions (simplest, free)
+`npm run sync` needs to run on a schedule. Easiest: the included GitHub Action.
 
 [`.github/workflows/sync-fixtures.yml`](.github/workflows/sync-fixtures.yml) runs
-every 10 minutes. Add two repo secrets (**Settings → Secrets and variables →
-Actions**):
+every 10 minutes. Add repo secrets (**Settings → Secrets and variables → Actions**):
 
 | Secret | Value |
 | --- | --- |
-| `SUPABASE_FUNCTIONS_URL` | `https://<project-ref>.supabase.co/functions/v1` |
-| `CRON_SECRET` | the value you set with `supabase secrets set CRON_SECRET=…` |
+| `SUPABASE_URL` | `https://<ref>.supabase.co` |
+| `SUPABASE_SECRET_KEY` | `sb_secret_…` |
+| `FOOTBALL_API_PROVIDER` | `football-data` (or `api-football`) |
+| `FOOTBALL_API_KEY` | your token |
+| `FOOTBALL_API_SEASON` | `2026` (api-football only) |
 
-### Postgres `pg_cron`
-
-Enable `pg_cron` + `pg_net` in **Database → Extensions**, then run
-[`supabase/cron.sql`](supabase/cron.sql) (edit the two Vault secrets first).
-
-### External cron / manual
-
-```bash
-curl -X POST "https://<ref>.supabase.co/functions/v1/sync-fixtures" \
-  -H "x-cron-secret: <CRON_SECRET>"
-```
-
-Any 5–15 minute interval is fine. Match status flips Upcoming → Live → Finished
-automatically and the leaderboard updates over Realtime.
+Alternatives: any cron runner that can `node scripts/sync-fixtures.mjs`, or the
+**Supabase Edge Function** — deploy [`supabase/functions/sync-fixtures`](supabase/functions/sync-fixtures)
+(`supabase functions deploy sync-fixtures --no-verify-jwt`, set the same secrets
+plus a `CRON_SECRET`) and hit it from `pg_cron` ([`supabase/cron.sql`](supabase/cron.sql))
+or an external cron with header `x-cron-secret: <CRON_SECRET>`.
 
 ---
 
-## 5. Switch to a live football API
-
-The Edge Function ships adapters for two providers. Set secrets and redeploy
-nothing (secrets take effect immediately):
-
-### football-data.org (free tier available)
+## 5. Run locally
 
 ```bash
-supabase secrets set FOOTBALL_API_PROVIDER=football-data
-supabase secrets set FOOTBALL_API_KEY=<your-token>
+npm install
+npm start          # http://localhost:4200
 ```
 
-### API-Football (api-sports.io)
-
-```bash
-supabase secrets set FOOTBALL_API_PROVIDER=api-football
-supabase secrets set FOOTBALL_API_KEY=<your-key>
-supabase secrets set FOOTBALL_API_SEASON=2025
-```
-
-Add a provider by implementing one `fetch…()` in
-[`supabase/functions/_shared/providers.ts`](supabase/functions/_shared/providers.ts)
-that returns `NormFixture[]`. Real fixtures upsert by the provider's own
-`api_id`; the mock `9xxx` rows can be deleted once real data flows.
+Credentials come from `src/environments/environment.ts` (or `.env` + `npm run
+config`).
 
 ---
 
@@ -216,42 +186,38 @@ that returns `NormFixture[]`. Real fixtures upsert by the provider's own
 src/app/
   core/            SupabaseService, AuthService, guards, domain services, models
   shared/          navbar, match-card, countdown, rank-badge, loading-spinner
-  features/
-    auth/          login, register
-    dashboard/     match list + inline prediction inputs (home)
-    outright/      pick the tournament winner
-    leaderboard/   live standings + podium
-    profile/       points, rank, full prediction history
-    rules/         scoring explainer
-    admin/         phase toggles, result entry, set champion
+  features/        auth · dashboard · outright · leaderboard · profile · rules · admin
 supabase/
-  migrations/      schema, scoring triggers, RLS, leaderboard view, realtime
+  migrations/      schema, scoring triggers, RLS, leaderboard view, realtime, play-off stage
   setup.sql        all migrations concatenated (paste-and-run)
-  seed.sql         16-team demo tournament
+  seed.sql         16-team demo tournament (mock mode only)
+  reset-fixtures.sql   wipe the demo before loading real data
   functions/
-    sync-fixtures/ Edge Function: pulls fixtures/scores (mock + 2 live providers)
-  cron.sql         optional pg_cron scheduler
-scripts/set-env.js writes public/config.json from env vars
+    _shared/       providers.mjs + sync-core.mjs (shared by the script AND the Edge Function)
+    sync-fixtures/ Edge Function wrapper (optional — `npm run sync` does the same job)
+  cron.sql         optional pg_cron scheduler for the Edge Function
+scripts/
+  set-env.js          writes public/config.json from env vars at build time
+  sync-fixtures.mjs   `npm run sync` — pulls real fixtures/scores into Supabase
 ```
 
 ## 7. Security model (Row Level Security)
 
-- Players can read all profiles, matches, teams and the leaderboard.
+- Players read all profiles, teams, matches and the leaderboard.
 - A player can read/write **only their own** predictions, and only while the
-  match is open (`is_match_open()` is enforced in the RLS policy, not just the
-  UI). `is_admin` cannot be self-assigned.
+  match is open — `is_match_open()` is enforced in the RLS policy, not just the
+  UI. `is_admin` cannot be self-assigned.
 - Only `is_admin` users can write matches, teams and `tournament_config`.
-- The leaderboard view aggregates everyone's totals without exposing individual
-  picks.
-- The service-role key lives only in Edge Function secrets, never in the bundle.
+- The leaderboard view aggregates everyone's totals without exposing picks.
+- The `sb_secret_` key lives only in your `.env` / CI secrets, never in the bundle.
 
 ## 8. Troubleshooting
 
 | Symptom | Fix |
 | --- | --- |
-| Red "Supabase is not configured" banner | Env vars missing — set `SUPABASE_URL` / `SUPABASE_ANON_KEY` and rebuild (`npm run config`). |
-| "Betting is closed for this match" on save | Match is past kickoff, or the phase isn't open in `/admin`. |
-| Leaderboard empty | No scored matches yet. Mark one finished in `/admin` or wait for the sync. |
+| "Supabase is not configured" banner | `environment.ts` values missing/blank, or a host build wrote an empty `/config.json`. |
+| "Betting is closed for this match" on save | Match is past kickoff, or that phase isn't open in `/admin`. |
+| `npm run sync` says `FOOTBALL_API_KEY is required` | Set `FOOTBALL_API_PROVIDER` + `FOOTBALL_API_KEY` in `.env`. |
+| Leaderboard empty | No scored matches yet — wait for a `finished` match or enter one in `/admin`. |
 | Email confirmation link points to localhost | Set **Site URL** in Supabase Auth to your deployed domain. |
-| Edge Function 401 | `x-cron-secret` header doesn't match the `CRON_SECRET` secret. |
-| `db push` rejects migrations | Use a fresh project, or run `supabase/setup.sql` in the SQL editor instead. |
+| `db push` rejects migrations | Use a fresh project, or run `supabase/setup.sql` in the SQL editor. |

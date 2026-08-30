@@ -8,8 +8,9 @@ create extension if not exists pgcrypto;
 -- ---- enums -----------------------------------------------------------------
 do $$ begin
   create type public.match_stage as enum
-    ('group', 'round_of_16', 'quarter_final', 'semi_final', 'final');
+    ('group', 'playoff', 'round_of_16', 'quarter_final', 'semi_final', 'final');
 exception when duplicate_object then null; end $$;
+-- Note: an earlier install without 'playoff' is upgraded by migration 0006.
 
 do $$ begin
   create type public.match_status as enum ('upcoming', 'live', 'finished');

@@ -25,7 +25,7 @@ import { RuntimeConfigService } from './core/runtime-config.service';
         <router-outlet />
       </main>
       <footer class="mx-auto max-w-6xl px-4 py-8 text-center text-xs text-slate-500">
-        UCL Tipp · a Champions League prediction game · scores &amp; fixtures via the sync service
+        Kufli TippJáték · a Champions League prediction game · fixtures &amp; scores via the sync service
       </footer>
     } @else {
       <div class="grid min-h-screen place-items-center">

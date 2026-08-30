@@ -1,5 +1,6 @@
 export type MatchStage =
   | 'group'
+  | 'playoff'
   | 'round_of_16'
   | 'quarter_final'
   | 'semi_final'
@@ -8,7 +9,8 @@ export type MatchStage =
 export type MatchStatus = 'upcoming' | 'live' | 'finished';
 
 export const STAGE_LABEL: Record<MatchStage, string> = {
-  group: 'Group Stage',
+  group: 'League Phase',
+  playoff: 'Knockout Play-off',
   round_of_16: 'Round of 16',
   quarter_final: 'Quarter-finals',
   semi_final: 'Semi-finals',
@@ -17,6 +19,16 @@ export const STAGE_LABEL: Record<MatchStage, string> = {
 
 export const STAGE_ORDER: MatchStage[] = [
   'group',
+  'playoff',
+  'round_of_16',
+  'quarter_final',
+  'semi_final',
+  'final'
+];
+
+/** Stages that unlock together with the knockout phase. */
+export const KNOCKOUT_STAGES: MatchStage[] = [
+  'playoff',
   'round_of_16',
   'quarter_final',
   'semi_final',

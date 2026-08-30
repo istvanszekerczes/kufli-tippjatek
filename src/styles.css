@@ -13,21 +13,22 @@ body {
 
 body {
   margin: 0;
-  background: radial-gradient(1200px 600px at 50% -10%, rgba(18, 212, 127, 0.12), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(56, 132, 255, 0.08), transparent 55%), #070a10;
+  background: radial-gradient(1100px 600px at 50% -12%, rgba(47, 181, 110, 0.16), transparent 60%),
+    radial-gradient(820px 460px at 100% 0%, rgba(244, 124, 32, 0.09), transparent 55%),
+    radial-gradient(760px 500px at 0% 100%, rgba(47, 181, 110, 0.07), transparent 55%), #06141b;
 }
 
 /* thin custom scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #1f2937 transparent;
+  scrollbar-color: #173946 transparent;
 }
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #1f2937;
+  background: #173946;
   border-radius: 9999px;
 }
 

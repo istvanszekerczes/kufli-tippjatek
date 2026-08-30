@@ -11,7 +11,7 @@ import { AuthService } from '../../core/auth.service';
   template: `
     <div class="mx-auto mt-6 max-w-md sm:mt-14">
       <div class="mb-6 text-center">
-        <div class="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-pitch-500 text-2xl text-night-950">⚽</div>
+        <img src="/kufli-logo.png" alt="Kufli TippJáték" class="mx-auto mb-3 h-16 w-16 drop-shadow-[0_6px_24px_rgba(47,181,110,0.35)]" />
         <h1 class="font-display text-2xl font-extrabold">Create your account</h1>
         <p class="mt-1 text-sm text-slate-400">Pick a display name — it shows on the leaderboard.</p>
       </div>
