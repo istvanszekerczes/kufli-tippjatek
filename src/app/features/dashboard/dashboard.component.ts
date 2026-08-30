@@ -90,6 +90,33 @@ type Filter = 'open' | 'live' | 'upcoming' | 'finished' | 'all';
       </div>
     </div>
 
+    <!-- narrow-down filters so you don't have to scroll -->
+    <div class="mb-5 flex flex-wrap items-center gap-2">
+      @if (matchdays().length) {
+        <select
+          class="input !w-auto !py-1.5 text-xs"
+          (change)="setMatchday($any($event.target).value)"
+        >
+          <option value="all" [selected]="matchdayFilter() === 'all'">All rounds</option>
+          @for (md of matchdays(); track md) {
+            <option [value]="md" [selected]="matchdayFilter() === md">Matchday {{ md }}</option>
+          }
+        </select>
+      }
+      <input
+        class="input !w-auto min-w-[11rem] flex-1 !py-1.5 text-xs"
+        placeholder="Filter by team…"
+        [value]="teamQuery()"
+        (input)="teamQuery.set($any($event.target).value)"
+      />
+      @if (matchdayFilter() !== 'all' || teamQuery().trim()) {
+        <button class="btn-ghost !px-3 !py-1.5 text-xs" (click)="clearExtra()">Clear</button>
+      }
+      <span class="ml-auto text-xs text-slate-500">
+        {{ shownCount() }} match{{ shownCount() === 1 ? '' : 'es' }} shown
+      </span>
+    </div>
+
     @if (toast(); as t) {
       <div
         class="mb-4 rounded-xl border px-4 py-2.5 text-sm"
@@ -130,6 +157,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private readonly leaderboard = inject(LeaderboardService);
 
   readonly filter = signal<Filter>('open');
+  readonly matchdayFilter = signal<number | 'all'>('all');
+  readonly teamQuery = signal('');
   readonly savingId = signal<string | null>(null);
   readonly toast = signal<{ ok: boolean; msg: string } | null>(null);
 
@@ -157,6 +186,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly openCount = computed(() => this.decorated().filter((m) => m.is_open).length);
   readonly liveCount = computed(() => this.decorated().filter((m) => m.status === 'live').length);
 
+  readonly matchdays = computed(() =>
+    [...new Set(this.decorated().map((m) => m.matchday).filter((n): n is number => n != null))].sort(
+      (a, b) => a - b
+    )
+  );
+
+  readonly shownCount = computed(() =>
+    this.sections().reduce((n, s) => n + s.matches.length, 0)
+  );
+
   readonly nextDeadline = computed(() => {
     const next = this.decorated()
       .filter((m) => m.is_open)
@@ -171,6 +210,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
     else if (f === 'live') list = list.filter((m) => m.status === 'live');
     else if (f === 'upcoming') list = list.filter((m) => m.status === 'upcoming');
     else if (f === 'finished') list = list.filter((m) => m.status === 'finished');
+
+    const md = this.matchdayFilter();
+    if (md !== 'all') list = list.filter((m) => m.matchday === md);
+
+    const q = this.teamQuery().trim().toLowerCase();
+    if (q) {
+      list = list.filter((m) =>
+        [m.home_team?.name, m.home_team?.short_name, m.away_team?.name, m.away_team?.short_name]
+          .some((s) => s?.toLowerCase().includes(q))
+      );
+    }
 
     const desc = f === 'finished';
     list = [...list].sort(
@@ -212,6 +262,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     } finally {
       this.savingId.set(null);
     }
+  }
+
+  setMatchday(v: string): void {
+    this.matchdayFilter.set(v === 'all' ? 'all' : Number(v));
+  }
+
+  clearExtra(): void {
+    this.matchdayFilter.set('all');
+    this.teamQuery.set('');
   }
 
   private flash(ok: boolean, msg: string): void {
