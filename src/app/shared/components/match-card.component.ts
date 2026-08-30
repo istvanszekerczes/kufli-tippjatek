@@ -2,13 +2,17 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   input,
   linkedSignal,
-  output
+  output,
+  signal
 } from '@angular/core';
 import { CountdownComponent } from './countdown.component';
 import { TeamCrestComponent } from './team-crest.component';
 import { ScoreStepperComponent } from './score-stepper.component';
+import { AuthService } from '../../core/auth.service';
+import { PredictionsService, MatchPick } from '../../core/predictions.service';
 import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
 
 @Component({
@@ -92,24 +96,66 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
             </button>
           </div>
         } @else {
-          <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
-            <span class="text-slate-400">
-              @if (hasPick()) {
-                Your pick:
-                <strong class="text-slate-100">{{ m().my_home }}–{{ m().my_away }}</strong>
-              } @else {
-                <span class="italic text-slate-500">No prediction submitted</span>
-              }
-            </span>
+          <div class="space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span class="text-slate-400">
+                @if (hasPick()) {
+                  Your pick:
+                  <strong class="text-slate-100">{{ m().my_home }}–{{ m().my_away }}</strong>
+                } @else {
+                  <span class="italic text-slate-500">No prediction submitted</span>
+                }
+              </span>
 
-            @if (m().status === 'finished' && m().my_points !== null) {
-              <span class="chip font-bold" [class]="pointsCls(m().my_points!)">
-                +{{ m().my_points }} pt{{ m().my_points === 1 ? '' : 's' }}
-              </span>
-            } @else if (m().status !== 'finished') {
-              <span class="chip text-slate-500">
-                {{ lockReason() }}
-              </span>
+              @if (m().status === 'finished' && m().my_points !== null) {
+                <span class="chip font-bold" [class]="pointsCls(m().my_points!)">
+                  +{{ m().my_points }} pt{{ m().my_points === 1 ? '' : 's' }}
+                </span>
+              } @else if (m().status !== 'finished') {
+                <span class="chip text-slate-500">{{ lockReason() }}</span>
+              }
+            </div>
+
+            @if (isLocked()) {
+              <button
+                class="flex items-center gap-1.5 text-xs font-semibold text-slate-400 transition hover:text-white"
+                (click)="togglePicks()"
+              >
+                <span class="text-[10px]">{{ picksOpen() ? '▼' : '▶' }}</span>
+                Everyone's picks
+                @if (picks()) {
+                  <span class="chip !px-2 !py-0">{{ picks()!.length }}</span>
+                }
+              </button>
+
+              @if (picksOpen()) {
+                @if (picksLoading()) {
+                  <p class="text-xs text-slate-500">Loading…</p>
+                } @else if (sortedPicks().length === 0) {
+                  <p class="text-xs italic text-slate-500">No predictions were submitted.</p>
+                } @else {
+                  <ul class="divide-y divide-white/5 overflow-hidden rounded-xl border border-white/10 bg-night-950/50 text-xs">
+                    @for (p of sortedPicks(); track p.user_id) {
+                      <li
+                        class="flex items-center justify-between gap-2 px-3 py-1.5"
+                        [class.text-pitch-300]="p.user_id === myId()"
+                      >
+                        <span class="truncate font-medium">
+                          {{ p.username }}@if (p.user_id === myId()) {
+                            <span class="text-slate-500"> (you)</span>
+                          }
+                        </span>
+                        <span class="flex shrink-0 items-center gap-2 tabular-nums">
+                          <span class="font-bold text-slate-200">{{ p.home }}–{{ p.away }}</span>
+                          @if (p.points !== null) {
+                            <span class="chip !px-1.5 !py-0" [class]="pointsCls(p.points)">+{{ p.points }}</span>
+                          }
+                        </span>
+                      </li>
+                    }
+                  </ul>
+                }
+              }
             }
           </div>
         }
@@ -118,6 +164,9 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
   `
 })
 export class MatchCardComponent {
+  private readonly auth = inject(AuthService);
+  private readonly predictions = inject(PredictionsService);
+
   readonly m = input.required<MatchWithPrediction>();
   readonly busy = input(false);
   readonly save = output<{ home: number; away: number }>();
@@ -127,6 +176,37 @@ export class MatchCardComponent {
 
   readonly hasPick = computed(() => this.m().my_home !== null && this.m().my_away !== null);
   readonly stageLabel = computed(() => STAGE_LABEL[this.m().stage]);
+
+  // --- reveal everyone's picks once the match has locked --------------------
+  readonly myId = computed(() => this.auth.user()?.id ?? null);
+  readonly isLocked = computed(
+    () => this.m().status !== 'upcoming' || new Date(this.m().kickoff_at).getTime() <= Date.now()
+  );
+  readonly picksOpen = signal(false);
+  readonly picks = signal<MatchPick[] | null>(null);
+  readonly picksLoading = signal(false);
+  readonly sortedPicks = computed(() => {
+    const list = this.picks() ?? [];
+    const finished = this.m().status === 'finished';
+    return [...list].sort((a, b) => {
+      if (finished && (b.points ?? -1) !== (a.points ?? -1)) return (b.points ?? -1) - (a.points ?? -1);
+      return a.username.localeCompare(b.username);
+    });
+  });
+
+  async togglePicks(): Promise<void> {
+    this.picksOpen.update((v) => !v);
+    if (this.picksOpen() && this.picks() === null) {
+      this.picksLoading.set(true);
+      try {
+        this.picks.set(await this.predictions.allForMatch(this.m().id));
+      } catch {
+        this.picks.set([]);
+      } finally {
+        this.picksLoading.set(false);
+      }
+    }
+  }
 
   readonly canSave = computed(() => {
     const h = this.home();

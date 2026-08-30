@@ -8,6 +8,14 @@ export interface PredictionHistoryRow {
   match: Match & { home_team: Team | null; away_team: Team | null };
 }
 
+export interface MatchPick {
+  user_id: string;
+  username: string;
+  home: number;
+  away: number;
+  points: number | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PredictionsService {
   private readonly sb = inject(SupabaseService);
@@ -29,6 +37,27 @@ export class PredictionsService {
 
     if (error) throw error;
     return data as Prediction;
+  }
+
+  /**
+   * Everyone's predictions for one match. Only returns other players' rows once
+   * the match has locked (kicked off) — enforced by Row Level Security.
+   */
+  async allForMatch(matchId: string): Promise<MatchPick[]> {
+    const { data, error } = await this.sb.client
+      .from('predictions')
+      .select('user_id, home_score, away_score, points_awarded, user:profiles(username)')
+      .eq('match_id', matchId);
+
+    if (error) throw error;
+
+    return ((data ?? []) as any[]).map((r) => ({
+      user_id: r.user_id,
+      username: r.user?.username ?? '—',
+      home: r.home_score,
+      away: r.away_score,
+      points: r.points_awarded
+    }));
   }
 
   /** Full history for a user (defaults to the current user). Newest first. */
