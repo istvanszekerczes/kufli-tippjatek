@@ -1,0 +1,15 @@
+# Netlify deployment configuration
+# Set SUPABASE_URL and SUPABASE_ANON_KEY under Site settings -> Environment variables.
+
+[build]
+  command = "npm run build:ci"
+  publish = "dist/ucl-tipp/browser"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback so deep links (/leaderboard, /profile ...) resolve to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

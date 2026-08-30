@@ -1,0 +1,13 @@
+# Supabase CLI configuration. `project_id` is a local label only.
+project_id = "ucl-tipp"
+
+[functions.sync-fixtures]
+# The function authenticates callers with its own `x-cron-secret` header,
+# so the platform JWT check is disabled.
+verify_jwt = false
+
+# Local-dev only (ignored by the hosted project). Point these at your deployed
+# URL when running `supabase start` against a real frontend.
+[auth]
+site_url = "http://localhost:4200"
+additional_redirect_urls = ["http://localhost:4200"]

@@ -1,0 +1,30 @@
+name: Sync fixtures
+
+# Pulls Champions League fixtures / live scores into Supabase on a schedule.
+# Add two repository secrets (Settings -> Secrets and variables -> Actions):
+#   SUPABASE_FUNCTIONS_URL  e.g. https://abcdefgh.supabase.co/functions/v1
+#   CRON_SECRET             the same value you set with `supabase secrets set CRON_SECRET=...`
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # every 10 minutes
+  workflow_dispatch: {}
+
+concurrency:
+  group: sync-fixtures
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call sync-fixtures Edge Function
+        run: |
+          curl --fail --silent --show-error --location \
+            -X POST "${SUPABASE_FUNCTIONS_URL%/}/sync-fixtures" \
+            -H "x-cron-secret: ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+        env:
+          SUPABASE_FUNCTIONS_URL: ${{ secrets.SUPABASE_FUNCTIONS_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

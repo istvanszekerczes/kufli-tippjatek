@@ -1,0 +1,10 @@
+{
+  "deno.enable": false,
+  "deno.enablePaths": ["supabase/functions"],
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "tailwindCSS.experimental.classRegex": [
+    ["class(?:Name)?=\"([^\"]*)\"", "([a-zA-Z0-9\\-:/. ]+)"],
+    ["\\[class\\]=\"([^\"]*)\"", "'([^']*)'"]
+  ]
+}

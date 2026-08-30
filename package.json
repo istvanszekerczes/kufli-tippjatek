@@ -1,0 +1,41 @@
+{
+  "name": "ucl-tipp",
+  "version": "1.0.0",
+  "description": "Champions League tipping / prediction game — Angular + Supabase",
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "ng": "ng",
+    "config": "node scripts/set-env.js",
+    "start": "npm run config && ng serve",
+    "build": "npm run config && ng build",
+    "build:ci": "node scripts/set-env.js && ng build",
+    "watch": "ng build --watch --configuration development",
+    "lint": "ng lint"
+  },
+  "dependencies": {
+    "@angular/common": "^21.2.0",
+    "@angular/compiler": "^21.2.0",
+    "@angular/core": "^21.2.0",
+    "@angular/forms": "^21.2.0",
+    "@angular/platform-browser": "^21.2.0",
+    "@angular/router": "^21.2.0",
+    "@supabase/supabase-js": "^2.47.10",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.6.2",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.2.7",
+    "@angular/cli": "^21.2.7",
+    "@angular/compiler-cli": "^21.2.0",
+    "@types/node": "^20.17.19",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.9.2"
+  }
+}
