@@ -10,12 +10,17 @@ import { RuntimeConfigService } from './core/runtime-config.service';
   imports: [RouterOutlet, NavbarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <!-- Kufli crest watermark, bleeding off the right edge, clipped to the viewport -->
+    <!-- Kufli crest — a prominent background mark on the right, clipped to the viewport -->
     <div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
       <img
         src="/kufli-logo.png"
         alt=""
-        class="absolute right-0 top-1/2 w-[min(62vw,640px)] max-w-none -translate-y-1/2 translate-x-[22%] opacity-[0.055] lg:translate-x-[14%] lg:opacity-[0.075]"
+        class="absolute right-0 top-1/2 w-[min(96vw,520px)] max-w-none -translate-y-1/2 translate-x-[30%] opacity-[0.10]
+               drop-shadow-[0_0_70px_rgba(47,181,110,0.22)]
+               sm:w-[min(70vw,640px)] sm:translate-x-[22%] sm:opacity-[0.13]
+               lg:w-[720px] lg:translate-x-[18%] lg:opacity-[0.15]
+               xl:w-[820px] xl:translate-x-[10%] xl:opacity-[0.17]
+               2xl:translate-x-[2%]"
       />
     </div>
 
