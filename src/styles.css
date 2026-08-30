@@ -11,6 +11,12 @@ body {
   height: 100%;
 }
 
+/* keep the off-edge crest watermark from creating a horizontal scrollbar
+   (`clip`, unlike `hidden`, doesn't break the sticky navbar) */
+html {
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
   background: radial-gradient(1100px 600px at 50% -12%, rgba(47, 181, 110, 0.16), transparent 60%),
