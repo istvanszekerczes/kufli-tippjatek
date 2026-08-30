@@ -22,7 +22,7 @@ import {
   MatchStage
 } from '../../core/models';
 
-type Filter = 'open' | 'live' | 'upcoming' | 'finished' | 'all';
+type Filter = 'todo' | 'open' | 'live' | 'upcoming' | 'finished' | 'all';
 
 @Component({
   selector: 'app-dashboard',
@@ -46,6 +46,21 @@ type Filter = 'open' | 'live' | 'upcoming' | 'finished' | 'all';
         </p>
       </div>
     </header>
+
+    <!-- missing-picks nudge -->
+    @if (missingPicks() > 0 && filter() !== 'todo') {
+      <button
+        class="mb-4 flex w-full items-center gap-3 rounded-xl border border-flame-500/30 bg-flame-500/10 px-4 py-3 text-left text-sm text-flame-300 transition hover:bg-flame-500/15"
+        (click)="filter.set('todo')"
+      >
+        <span class="text-lg">⚠️</span>
+        <span class="flex-1">
+          <strong class="tabular-nums">{{ missingPicks() }}</strong> open match{{ missingPicks() === 1 ? '' : 'es' }}
+          still need{{ missingPicks() === 1 ? 's' : '' }} a prediction.
+        </span>
+        <span class="chip shrink-0 border-flame-500/40 bg-flame-500/10 text-flame-200">Show →</span>
+      </button>
+    }
 
     <!-- phase banner -->
     @if (tournament.phase() === 'pre') {
@@ -85,6 +100,13 @@ type Filter = 'open' | 'live' | 'upcoming' | 'finished' | 'all';
             {{ f.label }}
             @if (f.key === 'live' && liveCount() > 0) {
               <span class="ml-1 rounded-full bg-rose-500 px-1.5 text-[10px] text-white">{{ liveCount() }}</span>
+            }
+            @if (f.key === 'todo' && missingPicks() > 0) {
+              <span
+                class="ml-1 rounded-full px-1.5 text-[10px]"
+                [class]="filter() === 'todo' ? 'bg-night-950/30 text-night-950' : 'bg-flame-500 text-white'"
+                >{{ missingPicks() }}</span
+              >
             }
           </button>
         }
@@ -146,8 +168,13 @@ type Filter = 'open' | 'live' | 'upcoming' | 'finished' | 'all';
       <app-loading-spinner label="Loading fixtures…" />
     } @else if (sections().length === 0) {
       <div class="card p-10 text-center text-slate-400">
-        <p class="text-3xl">🗓️</p>
-        <p class="mt-2 text-sm">Nothing to show for this filter yet.</p>
+        @if (filter() === 'todo') {
+          <p class="text-3xl">🎉</p>
+          <p class="mt-2 text-sm">All caught up — every open match has a prediction.</p>
+        } @else {
+          <p class="text-3xl">🗓️</p>
+          <p class="mt-2 text-sm">Nothing to show for this filter yet.</p>
+        }
       </div>
     } @else {
       @for (section of sections(); track section.stage) {
@@ -179,6 +206,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly toast = signal<{ ok: boolean; msg: string } | null>(null);
 
   readonly filters: { key: Filter; label: string; hint: string }[] = [
+    { key: 'todo', label: 'To do', hint: 'Open matches you have not predicted yet' },
     { key: 'open', label: 'Open', hint: 'Not kicked off yet and betting is open — you can still predict these' },
     { key: 'live', label: 'Live', hint: 'Matches being played right now' },
     { key: 'upcoming', label: 'Upcoming', hint: 'Every scheduled match, including ones locked until the phase opens' },
@@ -201,6 +229,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   readonly openCount = computed(() => this.decorated().filter((m) => m.is_open).length);
   readonly liveCount = computed(() => this.decorated().filter((m) => m.status === 'live').length);
+  readonly missingPicks = computed(
+    () => this.decorated().filter((m) => m.is_open && m.my_home === null).length
+  );
 
   readonly matchdays = computed(() =>
     [...new Set(this.decorated().map((m) => m.matchday).filter((n): n is number => n != null))].sort(
@@ -222,7 +253,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly sections = computed(() => {
     const f = this.filter();
     let list = this.decorated();
-    if (f === 'open') list = list.filter((m) => m.is_open);
+    if (f === 'todo') list = list.filter((m) => m.is_open && m.my_home === null);
+    else if (f === 'open') list = list.filter((m) => m.is_open);
     else if (f === 'live') list = list.filter((m) => m.status === 'live');
     else if (f === 'upcoming') list = list.filter((m) => m.status === 'upcoming');
     else if (f === 'finished') list = list.filter((m) => m.status === 'finished');
