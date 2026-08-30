@@ -12,10 +12,77 @@ const FULL_TIME_MS = 115 * 60 * 1000;
  */
 export async function runSync(db, opts = {}) {
   const provider = (opts.provider || 'uefa').toLowerCase();
-  if (provider === 'mock') return { provider, ...(await runMock(db)) };
 
-  const fixtures = await fetchFixtures(provider, opts.apiKey, opts.season);
-  return { provider, ...(await upsertFixtures(db, fixtures)) };
+  let result;
+  let fixtures = [];
+  if (provider === 'mock') {
+    result = await runMock(db);
+  } else {
+    fixtures = await fetchFixtures(provider, opts.apiKey, opts.season);
+    result = await upsertFixtures(db, fixtures);
+  }
+
+  const post = await postSync(db, fixtures);
+  return { provider, ...result, ...post };
+}
+
+// ---------------------------------------------------------------------------
+// After every sync: snapshot the standings + advance the tournament phase
+// automatically (open knockout betting when the league phase is done; set the
+// champion when the final is decided). All one-way — never reverts an admin.
+// ---------------------------------------------------------------------------
+async function postSync(db, fixtures) {
+  const out = {};
+
+  try {
+    const { data, error } = await db.rpc('capture_standings_snapshot');
+    if (!error) out.snapshot_users = data;
+  } catch {
+    /* migration 0008 not applied yet — ignore */
+  }
+
+  try {
+    const { data: cfg } = await db
+      .from('tournament_config')
+      .select('knockout_betting, champion_team_id')
+      .eq('id', 1)
+      .single();
+
+    if (cfg && !cfg.knockout_betting) {
+      const { data: grp } = await db.from('matches').select('status').eq('stage', 'group');
+      if (grp && grp.length > 0 && grp.every((m) => m.status === 'finished')) {
+        await db
+          .from('tournament_config')
+          .update({ knockout_betting: true, updated_at: new Date().toISOString() })
+          .eq('id', 1);
+        out.opened_knockout_betting = true;
+      }
+    }
+
+    if (cfg && !cfg.champion_team_id && fixtures.length) {
+      const fin = fixtures.find(
+        (f) => f.stage === 'final' && f.status === 'finished' && f.winner_api_id != null
+      );
+      if (fin) {
+        const { data: team } = await db
+          .from('teams')
+          .select('id')
+          .eq('api_id', fin.winner_api_id)
+          .maybeSingle();
+        if (team) {
+          await db
+            .from('tournament_config')
+            .update({ champion_team_id: team.id, updated_at: new Date().toISOString() })
+            .eq('id', 1);
+          out.set_champion = fin.winner_api_id;
+        }
+      }
+    }
+  } catch (e) {
+    out.phase_error = String(e);
+  }
+
+  return out;
 }
 
 // ---------------------------------------------------------------------------

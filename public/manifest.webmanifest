@@ -1,0 +1,17 @@
+{
+  "name": "Kufli TippJáték",
+  "short_name": "Kufli Tipp",
+  "description": "Champions League tipping game — predict scores, pick the winner, climb the leaderboard.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#06141b",
+  "theme_color": "#06141b",
+  "icons": [
+    { "src": "/kufli-logo-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/kufli-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/kufli-logo-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/kufli-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

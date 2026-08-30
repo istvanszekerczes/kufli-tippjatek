@@ -43,6 +43,12 @@ function uefaStatus(status) {
   return 'upcoming';
 }
 
+function uefaWinnerApiId(m) {
+  const id = m.winner?.match?.team?.id ?? m.winner?.aggregate?.team?.id;
+  const n = Number(id);
+  return Number.isFinite(n) ? n : null;
+}
+
 function uefaTeam(t) {
   if (!t || t.isPlaceHolder) {
     return { api_id: null, name: 'TBD', short_name: null, crest_url: null, group_label: null };
@@ -93,6 +99,7 @@ export async function fetchUefa(season) {
         status: uefaStatus(m.status),
         home_score: hs,
         away_score: as,
+        winner_api_id: uefaStatus(m.status) === 'finished' ? uefaWinnerApiId(m) : null,
         home: uefaTeam(m.homeTeam),
         away: uefaTeam(m.awayTeam)
       };
@@ -157,6 +164,12 @@ export async function fetchFootballData(apiKey) {
     status: fdStatus(m.status),
     home_score: m.score?.fullTime?.home ?? null,
     away_score: m.score?.fullTime?.away ?? null,
+    winner_api_id:
+      m.score?.winner === 'HOME_TEAM'
+        ? m.homeTeam?.id ?? null
+        : m.score?.winner === 'AWAY_TEAM'
+          ? m.awayTeam?.id ?? null
+          : null,
     home: fdTeam(m.homeTeam, m.group),
     away: fdTeam(m.awayTeam, m.group)
   }));
@@ -214,6 +227,12 @@ export async function fetchApiFootball(apiKey, season) {
       status: afStatus(row.fixture.status?.short ?? 'NS'),
       home_score: row.goals?.home ?? null,
       away_score: row.goals?.away ?? null,
+      winner_api_id:
+        row.teams?.home?.winner === true
+          ? row.teams?.home?.id ?? null
+          : row.teams?.away?.winner === true
+            ? row.teams?.away?.id ?? null
+            : null,
       home: afTeam(row.teams?.home),
       away: afTeam(row.teams?.away)
     };

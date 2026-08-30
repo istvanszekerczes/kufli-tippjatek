@@ -503,3 +503,75 @@ end $$;
 
 alter type public.match_stage add value if not exists 'playoff' before 'round_of_16';
 
+-- >>> migrations/20260101000007_reveal_picks.sql
+-- ============================================================================
+-- 0007_reveal_picks.sql — once a match locks, everyone can see everyone's picks
+-- ============================================================================
+
+-- A match is "locked" as soon as it kicks off (or is already live/finished).
+create or replace function public.is_match_locked(m_id uuid)
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+  select coalesce(m.status <> 'upcoming' or m.kickoff_at <= now(), false)
+  from public.matches m
+  where m.id = m_id;
+$$;
+
+grant execute on function public.is_match_locked(uuid) to anon, authenticated;
+
+-- Extra SELECT policy: predictions for a locked match are readable by any
+-- signed-in user. RLS policies are OR'd, so "read own" still applies too.
+drop policy if exists "predictions: read after lock" on public.predictions;
+create policy "predictions: read after lock" on public.predictions
+  for select to authenticated
+  using (public.is_match_locked(match_id));
+
+-- >>> migrations/20260101000008_standings_snapshots.sql
+-- ============================================================================
+-- 0008_standings_snapshots.sql — daily leaderboard snapshots for the
+-- "rank / points over time" chart on the profile page.
+-- ============================================================================
+
+create table if not exists public.standings_snapshots (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references public.profiles(id) on delete cascade,
+  as_of        date not null default (now() at time zone 'utc')::date,
+  total_points integer not null default 0,
+  rank         integer not null default 0,
+  created_at   timestamptz not null default now(),
+  unique (user_id, as_of)
+);
+create index if not exists standings_snapshots_user_idx
+  on public.standings_snapshots (user_id, as_of);
+
+alter table public.standings_snapshots enable row level security;
+
+drop policy if exists "snapshots: read all" on public.standings_snapshots;
+create policy "snapshots: read all" on public.standings_snapshots
+  for select to authenticated using (true);
+
+grant select on public.standings_snapshots to anon, authenticated;
+
+-- The sync job (service role) writes snapshots; this helper lets it upsert the
+-- whole leaderboard for "today" in one call.
+create or replace function public.capture_standings_snapshot()
+returns integer
+language plpgsql security definer set search_path = public
+as $$
+declare
+  n integer;
+begin
+  insert into public.standings_snapshots (user_id, as_of, total_points, rank)
+  select l.user_id, (now() at time zone 'utc')::date, l.total_points, l.rank
+  from public.leaderboard l
+  on conflict (user_id, as_of)
+  do update set total_points = excluded.total_points,
+                rank         = excluded.rank,
+                created_at   = now();
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
+grant execute on function public.capture_standings_snapshot() to service_role;
+
