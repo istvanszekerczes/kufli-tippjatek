@@ -3,8 +3,7 @@ import {
   Component,
   computed,
   input,
-  linkedSignal,
-  signal
+  linkedSignal
 } from '@angular/core';
 import { Team } from '../../core/models';
 
@@ -46,17 +45,20 @@ export class TeamCrestComponent {
   readonly crestUrl = input<string | null>(null);
   readonly size = input<'sm' | 'md' | 'lg'>('md');
 
-  private readonly attempt = signal(0);
+  private readonly key = computed(() => this.crestUrl() || this.team()?.crest_url || '');
 
-  /** reset when the team / URL changes (cards are reused as the list updates) */
-  readonly broken = linkedSignal(() => {
-    this.crestUrl();
-    this.team();
-    this.attempt.set(0);
-    return false;
+  // Both reset to their initial value whenever `key` changes (a reused element
+  // pointed at a different team). The computations only READ signals — never write.
+  private readonly attempt = linkedSignal<string, number>({
+    source: this.key,
+    computation: () => 0
+  });
+  readonly broken = linkedSignal<string, boolean>({
+    source: this.key,
+    computation: () => false
   });
 
-  private readonly url = computed(() => this.crestUrl() || this.team()?.crest_url || null);
+  private readonly url = computed(() => this.key() || null);
 
   /** a throwaway query param on retry forces the browser to actually re-fetch */
   readonly src = computed(() => {
