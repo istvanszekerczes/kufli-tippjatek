@@ -30,6 +30,23 @@ type Filter = 'open' | 'live' | 'upcoming' | 'finished' | 'all';
   imports: [RouterLink, MatchCardComponent, LoadingSpinnerComponent, CountdownComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <!-- brand masthead -->
+    <header class="mb-7 flex items-center gap-4 border-b border-white/10 pb-6">
+      <img
+        src="/kufli-logo.png"
+        alt=""
+        class="h-16 w-16 shrink-0 drop-shadow-[0_6px_28px_rgba(47,181,110,0.35)] sm:h-20 sm:w-20"
+      />
+      <div>
+        <h1 class="font-display text-2xl font-extrabold leading-tight sm:text-3xl">
+          Kufli<span class="text-pitch-400"> TippJáték</span>
+        </h1>
+        <p class="mt-0.5 text-sm text-slate-400">
+          Champions League predictions · exact score = 5 pts · outright winner = 15 pts
+        </p>
+      </div>
+    </header>
+
     <!-- phase banner -->
     @if (tournament.phase() === 'pre') {
       <div class="card mb-6 flex flex-col items-start gap-3 border-pitch-400/30 bg-pitch-400/5 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -46,7 +63,7 @@ type Filter = 'open' | 'live' | 'upcoming' | 'finished' | 'all';
 
     <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 class="font-display text-2xl font-extrabold">Matches</h1>
+        <h2 class="font-display text-xl font-extrabold">Matches</h2>
         @if (nextDeadline(); as d) {
           <p class="mt-1 text-sm text-slate-400">
             Next kickoff <app-countdown [target]="d" prefix="in " class="font-semibold text-pitch-300" />

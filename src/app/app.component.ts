@@ -10,18 +10,6 @@ import { RuntimeConfigService } from './core/runtime-config.service';
   imports: [RouterOutlet, NavbarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <!-- Kufli crest — a prominent background mark on the right, clipped to the viewport -->
-    <div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      <img
-        src="/kufli-logo.png"
-        alt=""
-        class="absolute right-0 top-1/2 w-[min(90vw,480px)] max-w-none -translate-y-1/2 translate-x-[32%] opacity-[0.06]
-               sm:w-[min(66vw,600px)] sm:translate-x-[24%] sm:opacity-[0.08]
-               lg:w-[680px] lg:translate-x-[20%] lg:opacity-[0.09]
-               xl:w-[760px] xl:translate-x-[12%]"
-      />
-    </div>
-
     @if (!cfg.isConfigured) {
       <div class="bg-rose-600 px-4 py-2 text-center text-sm font-semibold text-white">
         Supabase is not configured — set <code>SUPABASE_URL</code> and

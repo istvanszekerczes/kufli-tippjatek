@@ -11,17 +11,8 @@ import { LeaderboardService } from '../../core/leaderboard.service';
   template: `
     <header class="sticky top-0 z-40 border-b border-white/10 bg-night-950/80 backdrop-blur-lg">
       <nav class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-        <a routerLink="/" class="flex items-center gap-2.5">
-          <img
-            src="/kufli-logo.png"
-            alt="Kufli TippJáték"
-            width="40"
-            height="40"
-            class="h-10 w-10 drop-shadow-[0_2px_14px_rgba(47,181,110,0.45)]"
-          />
-          <span class="font-display text-lg font-extrabold leading-none tracking-tight">
-            Kufli<span class="text-pitch-400"> TippJáték</span>
-          </span>
+        <a routerLink="/" class="font-display text-lg font-extrabold tracking-tight">
+          Kufli<span class="text-pitch-400"> TippJáték</span>
         </a>
 
         <!-- desktop links -->
