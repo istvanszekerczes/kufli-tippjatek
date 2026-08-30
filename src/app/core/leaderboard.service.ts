@@ -3,6 +3,12 @@ import { SupabaseService } from './supabase.service';
 import { AuthService } from './auth.service';
 import { LeaderboardRow } from './models';
 
+export interface StandingsSnapshot {
+  as_of: string;
+  total_points: number;
+  rank: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class LeaderboardService {
   private readonly sb = inject(SupabaseService);
@@ -77,5 +83,18 @@ export class LeaderboardService {
   rankFor(userId: string | undefined): LeaderboardRow | null {
     if (!userId) return null;
     return this.rows().find((r) => r.user_id === userId) ?? null;
+  }
+
+  /** Daily rank/points history for a user, oldest first. Empty if the table isn't there yet. */
+  async snapshots(userId?: string): Promise<StandingsSnapshot[]> {
+    const uid = userId ?? this.auth.user()?.id;
+    if (!uid) return [];
+    const { data, error } = await this.sb.client
+      .from('standings_snapshots')
+      .select('as_of, total_points, rank')
+      .eq('user_id', uid)
+      .order('as_of', { ascending: true });
+    if (error) return [];
+    return (data ?? []) as StandingsSnapshot[];
   }
 }

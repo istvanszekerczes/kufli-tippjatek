@@ -16,6 +16,7 @@ import {
   PredictionsService,
   PredictionHistoryRow
 } from '../../core/predictions.service';
+import { StandingsSnapshot } from '../../core/leaderboard.service';
 import { STAGE_LABEL, OUTRIGHT_POINTS } from '../../core/models';
 
 @Component({
@@ -35,7 +36,7 @@ import { STAGE_LABEL, OUTRIGHT_POINTS } from '../../core/models';
     </div>
 
     <!-- stat cards -->
-    <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       <div class="card p-4">
         <p class="label">Total points</p>
         <p class="text-3xl font-black tabular-nums text-pitch-300">{{ me()?.total_points ?? 0 }}</p>
@@ -49,6 +50,19 @@ import { STAGE_LABEL, OUTRIGHT_POINTS } from '../../core/models';
         }
       </div>
       <div class="card p-4">
+        <p class="label">Hit rate</p>
+        <p class="text-3xl font-black tabular-nums">
+          {{ hitRate() === null ? '—' : hitRate() + '%' }}
+        </p>
+        <p class="text-[11px] text-slate-500">scored a point</p>
+      </div>
+      <div class="card p-4">
+        <p class="label">Avg / match</p>
+        <p class="text-3xl font-black tabular-nums">
+          {{ avgPoints() === null ? '—' : avgPoints()!.toFixed(2) }}
+        </p>
+      </div>
+      <div class="card p-4">
         <p class="label">Exact scores</p>
         <p class="text-3xl font-black tabular-nums">{{ exactCount() }}</p>
       </div>
@@ -56,7 +70,57 @@ import { STAGE_LABEL, OUTRIGHT_POINTS } from '../../core/models';
         <p class="label">Predictions</p>
         <p class="text-3xl font-black tabular-nums">{{ history().length }}</p>
       </div>
+      <div class="card p-4">
+        <p class="label">Best round</p>
+        @if (bestRound(); as r) {
+          <p class="text-xl font-black">{{ r.label }}</p>
+          <p class="text-[11px] text-pitch-300">+{{ r.points }} pts</p>
+        } @else {
+          <p class="text-slate-500">—</p>
+        }
+      </div>
+      <div class="card p-4">
+        <p class="label">Toughest round</p>
+        @if (worstRound(); as r) {
+          <p class="text-xl font-black">{{ r.label }}</p>
+          <p class="text-[11px] text-rose-300">+{{ r.points }} pts</p>
+        } @else {
+          <p class="text-slate-500">—</p>
+        }
+      </div>
     </div>
+
+    <!-- rank over time -->
+    @if (spark(); as sp) {
+      <div class="card mb-6 p-4">
+        <div class="mb-1 flex items-center justify-between">
+          <p class="label mb-0">Rank over time</p>
+          <p class="text-xs text-slate-400">
+            #{{ sp.from }} → <span class="font-semibold text-slate-200">#{{ sp.to }}</span>
+            @if (sp.to < sp.from) {
+              <span class="text-pitch-300">▲ {{ sp.from - sp.to }}</span>
+            } @else if (sp.to > sp.from) {
+              <span class="text-rose-300">▼ {{ sp.to - sp.from }}</span>
+            }
+          </p>
+        </div>
+        <svg
+          [attr.viewBox]="'0 0 ' + sp.w + ' ' + sp.h"
+          preserveAspectRatio="none"
+          class="h-14 w-full"
+        >
+          <polyline
+            [attr.points]="sp.points"
+            fill="none"
+            stroke="#2fb56e"
+            stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+            vector-effect="non-scaling-stroke"
+          />
+        </svg>
+      </div>
+    }
 
     <!-- outright -->
     <div class="card mb-6 flex items-center justify-between gap-3 p-4">
@@ -147,11 +211,71 @@ export class ProfileComponent implements OnInit {
   readonly outrightPoints = OUTRIGHT_POINTS;
   readonly loading = signal(true);
   readonly history = signal<PredictionHistoryRow[]>([]);
+  readonly snapshots = signal<StandingsSnapshot[]>([]);
 
   readonly me = computed(() => this.lb.me());
+
+  private readonly scored = computed(() =>
+    this.history().filter((r) => r.prediction.points_awarded !== null)
+  );
   readonly exactCount = computed(
     () => this.history().filter((r) => r.prediction.points_awarded === 5).length
   );
+  readonly hitRate = computed(() => {
+    const s = this.scored();
+    if (!s.length) return null;
+    const won = s.filter((r) => (r.prediction.points_awarded ?? 0) > 0).length;
+    return Math.round((100 * won) / s.length);
+  });
+  readonly avgPoints = computed(() => {
+    const s = this.scored();
+    if (!s.length) return null;
+    return s.reduce((n, r) => n + (r.prediction.points_awarded ?? 0), 0) / s.length;
+  });
+
+  private readonly rounds = computed(() => {
+    const map = new Map<string, { label: string; points: number }>();
+    for (const r of this.scored()) {
+      const { key, label } = this.roundKey(r);
+      const e = map.get(key) ?? { label, points: 0 };
+      e.points += r.prediction.points_awarded ?? 0;
+      map.set(key, e);
+    }
+    return [...map.values()];
+  });
+  readonly bestRound = computed(() => {
+    const rs = this.rounds();
+    return rs.length ? rs.reduce((a, b) => (b.points > a.points ? b : a)) : null;
+  });
+  readonly worstRound = computed(() => {
+    const rs = this.rounds();
+    return rs.length > 1 ? rs.reduce((a, b) => (b.points < a.points ? b : a)) : null;
+  });
+
+  readonly spark = computed(() => {
+    const s = this.snapshots();
+    if (s.length < 2) return null;
+    const w = 240;
+    const h = 44;
+    const pad = 4;
+    const ranks = s.map((x) => x.rank);
+    const min = Math.min(...ranks);
+    const span = Math.max(...ranks) - min || 1;
+    const points = s
+      .map((x, i) => {
+        const px = (i / (s.length - 1)) * w;
+        const py = pad + ((x.rank - min) / span) * (h - pad * 2);
+        return `${px.toFixed(1)},${py.toFixed(1)}`;
+      })
+      .join(' ');
+    return { points, w, h, from: s[0].rank, to: s[s.length - 1].rank };
+  });
+
+  private roundKey(r: PredictionHistoryRow): { key: string; label: string } {
+    const m = r.match;
+    if (m.stage === 'group') return { key: 'g' + (m.matchday ?? 0), label: 'MD' + (m.matchday ?? '?') };
+    return { key: m.stage, label: STAGE_LABEL[m.stage] };
+  }
   readonly outrightTeam = computed(() => {
     const id = this.outright.myPick()?.team_id;
     return id ? this.outright.teams().find((t) => t.id === id) ?? null : null;
@@ -160,12 +284,14 @@ export class ProfileComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     this.loading.set(true);
     try {
-      const [rows] = await Promise.all([
+      const [rows, , , snaps] = await Promise.all([
         this.predictions.history(),
         this.lb.loadMe(),
-        this.outright.load()
+        this.outright.load(),
+        this.lb.snapshots()
       ]);
       this.history.set(rows);
+      this.snapshots.set(snaps);
     } finally {
       this.loading.set(false);
     }
