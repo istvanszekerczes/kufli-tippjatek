@@ -15,12 +15,10 @@ import { RuntimeConfigService } from './core/runtime-config.service';
       <img
         src="/kufli-logo.png"
         alt=""
-        class="absolute right-0 top-1/2 w-[min(96vw,520px)] max-w-none -translate-y-1/2 translate-x-[30%] opacity-[0.10]
-               drop-shadow-[0_0_70px_rgba(47,181,110,0.22)]
-               sm:w-[min(70vw,640px)] sm:translate-x-[22%] sm:opacity-[0.13]
-               lg:w-[720px] lg:translate-x-[18%] lg:opacity-[0.15]
-               xl:w-[820px] xl:translate-x-[10%] xl:opacity-[0.17]
-               2xl:translate-x-[2%]"
+        class="absolute right-0 top-1/2 w-[min(90vw,480px)] max-w-none -translate-y-1/2 translate-x-[32%] opacity-[0.06]
+               sm:w-[min(66vw,600px)] sm:translate-x-[24%] sm:opacity-[0.08]
+               lg:w-[680px] lg:translate-x-[20%] lg:opacity-[0.09]
+               xl:w-[760px] xl:translate-x-[12%]"
       />
     </div>
 
