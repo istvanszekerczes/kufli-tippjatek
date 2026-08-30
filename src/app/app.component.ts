@@ -3,11 +3,12 @@ import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from './shared/components/navbar.component';
 import { AuthService } from './core/auth.service';
 import { RuntimeConfigService } from './core/runtime-config.service';
+import { TranslatePipe } from './core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, NavbarComponent],
+  imports: [RouterOutlet, NavbarComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (!cfg.isConfigured) {
@@ -25,7 +26,7 @@ import { RuntimeConfigService } from './core/runtime-config.service';
         <router-outlet />
       </main>
       <footer class="mx-auto max-w-6xl px-4 py-8 text-center text-xs text-slate-500">
-        Kufli TippJáték · a Champions League prediction game · fixtures &amp; scores via the sync service
+        Kufli TippJáték · {{ 'footer.text' | t }}
       </footer>
     } @else {
       <div class="grid min-h-screen place-items-center">

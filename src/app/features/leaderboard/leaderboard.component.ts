@@ -10,25 +10,26 @@ import { RankBadgeComponent } from '../../shared/components/rank-badge.component
 import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner.component';
 import { LeaderboardService } from '../../core/leaderboard.service';
 import { AuthService } from '../../core/auth.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-leaderboard',
   standalone: true,
-  imports: [RankBadgeComponent, LoadingSpinnerComponent],
+  imports: [RankBadgeComponent, LoadingSpinnerComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mb-5 flex items-end justify-between gap-3">
       <div>
-        <h1 class="font-display text-2xl font-extrabold">Leaderboard</h1>
-        <p class="mt-1 text-sm text-slate-400">Live standings · updates the moment a match is scored.</p>
+        <h1 class="font-display text-2xl font-extrabold">{{ 'lb.title' | t }}</h1>
+        <p class="mt-1 text-sm text-slate-400">{{ 'lb.sub' | t }}</p>
       </div>
-      <span class="chip">{{ lb.rows().length }} player{{ lb.rows().length === 1 ? '' : 's' }}</span>
+      <span class="chip">{{ 'lb.players' | t: { n: lb.rows().length } }}</span>
     </div>
 
     @if (lb.loading() && lb.rows().length === 0) {
-      <app-loading-spinner label="Loading standings…" />
+      <app-loading-spinner [label]="'lb.loading' | t" />
     } @else if (lb.rows().length === 0) {
-      <div class="card p-10 text-center text-slate-400">No players yet — be the first to predict!</div>
+      <div class="card p-10 text-center text-slate-400">{{ 'lb.empty' | t }}</div>
     } @else {
       <!-- podium -->
       @if (podium().length === 3) {
@@ -42,7 +43,7 @@ import { AuthService } from '../../core/auth.service';
               <span class="text-2xl">{{ p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : '🥉' }}</span>
               <span class="max-w-full truncate text-sm font-semibold">{{ p.username }}</span>
               <span class="text-lg font-black tabular-nums text-pitch-300">{{ p.total_points }}</span>
-              <span class="text-[11px] text-slate-500">{{ p.exact_hits }} exact</span>
+              <span class="text-[11px] text-slate-500">{{ p.exact_hits }} {{ 'lb.exact' | t }}</span>
             </div>
           }
         </div>
@@ -53,10 +54,10 @@ import { AuthService } from '../../core/auth.service';
           <thead class="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
             <tr>
               <th class="px-3 py-3 text-left">#</th>
-              <th class="px-3 py-3 text-left">Player</th>
-              <th class="hidden px-3 py-3 text-right sm:table-cell">Scored</th>
-              <th class="hidden px-3 py-3 text-right sm:table-cell">Exact</th>
-              <th class="px-3 py-3 text-right">Points</th>
+              <th class="px-3 py-3 text-left">{{ 'lb.player' | t }}</th>
+              <th class="hidden px-3 py-3 text-right sm:table-cell">{{ 'lb.scored' | t }}</th>
+              <th class="hidden px-3 py-3 text-right sm:table-cell">{{ 'lb.exact' | t }}</th>
+              <th class="px-3 py-3 text-right">{{ 'lb.points' | t }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-white/5">
@@ -66,7 +67,7 @@ import { AuthService } from '../../core/auth.service';
                 <td class="px-3 py-3 font-semibold">
                   {{ row.username }}
                   @if (row.user_id === myId()) {
-                    <span class="ml-1 text-xs font-normal text-pitch-300">(you)</span>
+                    <span class="ml-1 text-xs font-normal text-pitch-300">({{ 'c.you' | t }})</span>
                   }
                 </td>
                 <td class="hidden px-3 py-3 text-right tabular-nums text-slate-400 sm:table-cell">

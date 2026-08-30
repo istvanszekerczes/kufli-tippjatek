@@ -13,12 +13,14 @@ import { TeamCrestComponent } from './team-crest.component';
 import { ScoreStepperComponent } from './score-stepper.component';
 import { AuthService } from '../../core/auth.service';
 import { PredictionsService, MatchPick } from '../../core/predictions.service';
-import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
+import { I18nService } from '../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { MatchWithPrediction, Team } from '../../core/models';
 
 @Component({
   selector: 'app-match-card',
   standalone: true,
-  imports: [CountdownComponent, TeamCrestComponent, ScoreStepperComponent],
+  imports: [CountdownComponent, TeamCrestComponent, ScoreStepperComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card animate-fade-in p-4 sm:p-5">
@@ -26,17 +28,17 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
       <div class="mb-3 flex items-center justify-between gap-2 text-xs">
         <span class="chip text-slate-300">
           {{ stageLabel() }}@if (m().round) { · {{ m().round }} }
-          @if (m().stage === 'group' && m().matchday) { · MD{{ m().matchday }} }
+          @if (m().stage === 'group' && m().matchday) { · {{ 'dash.md' | t: { n: m().matchday ?? 0 } }} }
         </span>
 
         @switch (m().status) {
           @case ('live') {
             <span class="chip border-rose-500/40 bg-rose-500/10 text-rose-300">
-              <span class="h-1.5 w-1.5 animate-pulse-live rounded-full bg-rose-400"></span> LIVE
+              <span class="h-1.5 w-1.5 animate-pulse-live rounded-full bg-rose-400"></span> {{ 'mc.live' | t }}
             </span>
           }
           @case ('finished') {
-            <span class="chip border-white/10 bg-white/5 text-slate-400">Full time</span>
+            <span class="chip border-white/10 bg-white/5 text-slate-400">{{ 'mc.ft' | t }}</span>
           }
           @default {
             <span class="chip text-pitch-300">
@@ -55,7 +57,7 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
 
         <div class="px-1 text-center">
           @if (m().status === 'upcoming') {
-            <div class="text-2xl font-black text-slate-600">vs</div>
+            <div class="text-2xl font-black text-slate-600">{{ 'mc.vs' | t }}</div>
             <div class="mt-1 text-[11px] text-slate-500">
               {{ kickoffLabel() }}
             </div>
@@ -92,7 +94,7 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
               [disabled]="!canSave() || busy()"
               (click)="emitSave()"
             >
-              {{ hasPick() ? 'Update' : 'Submit' }}
+              {{ hasPick() ? ('c.update' | t) : ('c.submit' | t) }}
             </button>
           </div>
         } @else {
@@ -100,19 +102,19 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
             <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span class="text-slate-400">
                 @if (hasPick()) {
-                  Your pick:
+                  {{ 'mc.yourPick' | t }}
                   <strong class="text-slate-100">{{ m().my_home }}–{{ m().my_away }}</strong>
                 } @else {
-                  <span class="italic text-slate-500">No prediction submitted</span>
+                  <span class="italic text-slate-500">{{ 'mc.noPred' | t }}</span>
                 }
               </span>
 
               @if (m().status === 'finished' && m().my_points !== null) {
                 <span class="chip font-bold" [class]="pointsCls(m().my_points!)">
-                  +{{ m().my_points }} pt{{ m().my_points === 1 ? '' : 's' }}
+                  +{{ m().my_points }} {{ 'c.pts' | t }}
                 </span>
               } @else if (m().status !== 'finished') {
-                <span class="chip text-slate-500">{{ lockReason() }}</span>
+                <span class="chip text-slate-500">{{ lockReason() | t }}</span>
               }
             </div>
 
@@ -122,7 +124,7 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
                 (click)="togglePicks()"
               >
                 <span class="text-[10px]">{{ picksOpen() ? '▼' : '▶' }}</span>
-                Everyone's picks
+                {{ 'mc.everyonesPicks' | t }}
                 @if (picks()) {
                   <span class="chip !px-2 !py-0">{{ picks()!.length }}</span>
                 }
@@ -130,9 +132,9 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
 
               @if (picksOpen()) {
                 @if (picksLoading()) {
-                  <p class="text-xs text-slate-500">Loading…</p>
+                  <p class="text-xs text-slate-500">{{ 'c.loading' | t }}</p>
                 } @else if (sortedPicks().length === 0) {
-                  <p class="text-xs italic text-slate-500">No predictions were submitted.</p>
+                  <p class="text-xs italic text-slate-500">{{ 'mc.noPreds' | t }}</p>
                 } @else {
                   <ul class="divide-y divide-white/5 overflow-hidden rounded-xl border border-white/10 bg-night-950/50 text-xs">
                     @for (p of sortedPicks(); track p.user_id) {
@@ -142,7 +144,7 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
                       >
                         <span class="truncate font-medium">
                           {{ p.username }}@if (p.user_id === myId()) {
-                            <span class="text-slate-500"> (you)</span>
+                            <span class="text-slate-500"> ({{ 'c.you' | t }})</span>
                           }
                         </span>
                         <span class="flex shrink-0 items-center gap-2 tabular-nums">
@@ -166,6 +168,7 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
 export class MatchCardComponent {
   private readonly auth = inject(AuthService);
   private readonly predictions = inject(PredictionsService);
+  private readonly i18n = inject(I18nService);
 
   readonly m = input.required<MatchWithPrediction>();
   readonly busy = input(false);
@@ -175,7 +178,10 @@ export class MatchCardComponent {
   readonly away = linkedSignal<number | null>(() => this.m().my_away);
 
   readonly hasPick = computed(() => this.m().my_home !== null && this.m().my_away !== null);
-  readonly stageLabel = computed(() => STAGE_LABEL[this.m().stage]);
+  readonly stageLabel = computed(() => {
+    this.i18n.lang();
+    return this.i18n.t('stage.' + this.m().stage);
+  });
 
   // --- reveal everyone's picks once the match has locked --------------------
   readonly myId = computed(() => this.auth.user()?.id ?? null);
@@ -235,9 +241,9 @@ export class MatchCardComponent {
 
   lockReason(): string {
     const m = this.m();
-    if (m.status !== 'upcoming') return 'Betting closed';
-    if (new Date(m.kickoff_at).getTime() <= Date.now()) return 'Kickoff passed';
-    return m.stage === 'group' ? 'Group betting not open' : 'Knockout betting not open yet';
+    if (m.status !== 'upcoming') return 'mc.bettingClosed';
+    if (new Date(m.kickoff_at).getTime() <= Date.now()) return 'mc.kickoffPassed';
+    return m.stage === 'group' ? 'mc.groupNotOpen' : 'mc.koNotOpen';
   }
 
   name(t?: Team | null): string {

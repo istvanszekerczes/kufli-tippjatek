@@ -2,45 +2,43 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mx-auto mt-6 max-w-md sm:mt-14">
       <div class="mb-6 text-center">
         <img src="/kufli-logo.png" alt="Kufli TippJáték" class="mx-auto mb-4 h-24 w-24 drop-shadow-[0_10px_40px_rgba(47,181,110,0.4)] sm:h-28 sm:w-28" />
-        <h1 class="font-display text-2xl font-extrabold">Create your account</h1>
-        <p class="mt-1 text-sm text-slate-400">Pick a display name — it shows on the leaderboard.</p>
+        <h1 class="font-display text-2xl font-extrabold">{{ 'auth.createTitle' | t }}</h1>
+        <p class="mt-1 text-sm text-slate-400">{{ 'auth.createSub' | t }}</p>
       </div>
 
       @if (done()) {
         <div class="card space-y-3 p-6 text-center">
           <p class="text-2xl">📬</p>
-          <p class="text-sm text-slate-300">
-            Almost there — check <strong>{{ email }}</strong> for a confirmation link, then
-            <a routerLink="/login" class="font-semibold text-pitch-400 hover:underline">sign in</a>.
-          </p>
+          <p class="text-sm text-slate-300">{{ 'auth.checkEmail' | t: { email: email } }}</p>
         </div>
       } @else {
         <form class="card space-y-4 p-6" (ngSubmit)="submit()">
           <div>
-            <label class="label" for="username">Display name</label>
+            <label class="label" for="username">{{ 'auth.displayName' | t }}</label>
             <input id="username" name="username" class="input" autocomplete="nickname" minlength="2" maxlength="24"
               [(ngModel)]="username" required />
           </div>
           <div>
-            <label class="label" for="email">Email</label>
+            <label class="label" for="email">{{ 'auth.email' | t }}</label>
             <input id="email" name="email" type="email" class="input" autocomplete="email"
               [(ngModel)]="email" required />
           </div>
           <div>
-            <label class="label" for="password">Password</label>
+            <label class="label" for="password">{{ 'auth.password' | t }}</label>
             <input id="password" name="password" type="password" class="input" autocomplete="new-password" minlength="6"
               [(ngModel)]="password" required />
-            <p class="mt-1 text-xs text-slate-500">At least 6 characters.</p>
+            <p class="mt-1 text-xs text-slate-500">{{ 'auth.min6' | t }}</p>
           </div>
 
           @if (error()) {
@@ -50,14 +48,14 @@ import { AuthService } from '../../core/auth.service';
           }
 
           <button type="submit" class="btn-primary w-full" [disabled]="loading()">
-            {{ loading() ? 'Creating…' : 'Create account' }}
+            {{ loading() ? ('auth.creating' | t) : ('auth.createBtn' | t) }}
           </button>
         </form>
       }
 
       <p class="mt-4 text-center text-sm text-slate-400">
-        Already registered?
-        <a routerLink="/login" class="font-semibold text-pitch-400 hover:underline">Sign in</a>
+        {{ 'auth.already' | t }}
+        <a routerLink="/login" class="font-semibold text-pitch-400 hover:underline">{{ 'auth.signin' | t }}</a>
       </p>
     </div>
   `

@@ -17,12 +17,14 @@ import {
   PredictionHistoryRow
 } from '../../core/predictions.service';
 import { StandingsSnapshot } from '../../core/leaderboard.service';
-import { STAGE_LABEL, OUTRIGHT_POINTS } from '../../core/models';
+import { I18nService } from '../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { OUTRIGHT_POINTS } from '../../core/models';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [RouterLink, RankBadgeComponent, LoadingSpinnerComponent],
+  imports: [RouterLink, RankBadgeComponent, LoadingSpinnerComponent, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mb-6 flex items-center gap-4">
@@ -38,11 +40,11 @@ import { STAGE_LABEL, OUTRIGHT_POINTS } from '../../core/models';
     <!-- stat cards -->
     <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       <div class="card p-4">
-        <p class="label">Total points</p>
+        <p class="label">{{ 'pf.totalPoints' | t }}</p>
         <p class="text-3xl font-black tabular-nums text-pitch-300">{{ me()?.total_points ?? 0 }}</p>
       </div>
       <div class="card flex flex-col p-4">
-        <p class="label">Leaderboard rank</p>
+        <p class="label">{{ 'pf.rank' | t }}</p>
         @if (me()) {
           <app-rank-badge [rank]="me()!.rank" />
         } @else {
@@ -50,40 +52,40 @@ import { STAGE_LABEL, OUTRIGHT_POINTS } from '../../core/models';
         }
       </div>
       <div class="card p-4">
-        <p class="label">Hit rate</p>
+        <p class="label">{{ 'pf.hitRate' | t }}</p>
         <p class="text-3xl font-black tabular-nums">
           {{ hitRate() === null ? '—' : hitRate() + '%' }}
         </p>
-        <p class="text-[11px] text-slate-500">scored a point</p>
+        <p class="text-[11px] text-slate-500">{{ 'pf.scoredPoint' | t }}</p>
       </div>
       <div class="card p-4">
-        <p class="label">Avg / match</p>
+        <p class="label">{{ 'pf.avgPerMatch' | t }}</p>
         <p class="text-3xl font-black tabular-nums">
           {{ avgPoints() === null ? '—' : avgPoints()!.toFixed(2) }}
         </p>
       </div>
       <div class="card p-4">
-        <p class="label">Exact scores</p>
+        <p class="label">{{ 'pf.exactScores' | t }}</p>
         <p class="text-3xl font-black tabular-nums">{{ exactCount() }}</p>
       </div>
       <div class="card p-4">
-        <p class="label">Predictions</p>
+        <p class="label">{{ 'pf.predictions' | t }}</p>
         <p class="text-3xl font-black tabular-nums">{{ history().length }}</p>
       </div>
       <div class="card p-4">
-        <p class="label">Best round</p>
+        <p class="label">{{ 'pf.bestRound' | t }}</p>
         @if (bestRound(); as r) {
           <p class="text-xl font-black">{{ r.label }}</p>
-          <p class="text-[11px] text-pitch-300">+{{ r.points }} pts</p>
+          <p class="text-[11px] text-pitch-300">+{{ r.points }} {{ 'c.pts' | t }}</p>
         } @else {
           <p class="text-slate-500">—</p>
         }
       </div>
       <div class="card p-4">
-        <p class="label">Toughest round</p>
+        <p class="label">{{ 'pf.toughestRound' | t }}</p>
         @if (worstRound(); as r) {
           <p class="text-xl font-black">{{ r.label }}</p>
-          <p class="text-[11px] text-rose-300">+{{ r.points }} pts</p>
+          <p class="text-[11px] text-rose-300">+{{ r.points }} {{ 'c.pts' | t }}</p>
         } @else {
           <p class="text-slate-500">—</p>
         }
@@ -94,7 +96,7 @@ import { STAGE_LABEL, OUTRIGHT_POINTS } from '../../core/models';
     @if (spark(); as sp) {
       <div class="card mb-6 p-4">
         <div class="mb-1 flex items-center justify-between">
-          <p class="label mb-0">Rank over time</p>
+          <p class="label mb-0">{{ 'pf.rankOverTime' | t }}</p>
           <p class="text-xs text-slate-400">
             #{{ sp.from }} → <span class="font-semibold text-slate-200">#{{ sp.to }}</span>
             @if (sp.to < sp.from) {
@@ -125,7 +127,7 @@ import { STAGE_LABEL, OUTRIGHT_POINTS } from '../../core/models';
     <!-- outright -->
     <div class="card mb-6 flex items-center justify-between gap-3 p-4">
       <div>
-        <p class="label mb-0">Outright winner pick</p>
+        <p class="label mb-0">{{ 'pf.outrightPick' | t }}</p>
         @if (outrightTeam(); as t) {
           <p class="mt-1 font-semibold">
             {{ t.name }}
@@ -134,35 +136,35 @@ import { STAGE_LABEL, OUTRIGHT_POINTS } from '../../core/models';
                 class="chip ml-2"
                 [class]="(outright.myPick()?.points_awarded ?? 0) > 0 ? 'border-pitch-400/40 bg-pitch-400/10 text-pitch-300' : 'text-slate-400'"
               >
-                +{{ outright.myPick()?.points_awarded }} pts
+                +{{ outright.myPick()?.points_awarded }} {{ 'c.pts' | t }}
               </span>
             }
           </p>
         } @else {
-          <p class="mt-1 text-sm italic text-slate-500">No pick yet</p>
+          <p class="mt-1 text-sm italic text-slate-500">{{ 'pf.noPickYet' | t }}</p>
         }
       </div>
-      <a routerLink="/outright" class="btn-ghost shrink-0">{{ outrightTeam() ? 'Change' : 'Pick' }}</a>
+      <a routerLink="/outright" class="btn-ghost shrink-0">{{ outrightTeam() ? ('c.change' | t) : ('c.pick' | t) }}</a>
     </div>
 
     <!-- history -->
-    <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">Prediction history</h2>
+    <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">{{ 'pf.history' | t }}</h2>
     @if (loading()) {
-      <app-loading-spinner label="Loading history…" />
+      <app-loading-spinner [label]="'pf.loadingHistory' | t" />
     } @else if (history().length === 0) {
       <div class="card p-10 text-center text-slate-400">
-        No predictions yet — <a routerLink="/" class="text-pitch-400 hover:underline">head to the matches</a>.
+        {{ 'pf.noPredsYet' | t }}
       </div>
     } @else {
       <div class="card overflow-x-auto">
         <table class="w-full min-w-[560px] text-sm">
           <thead class="bg-white/5 text-xs uppercase tracking-wide text-slate-400">
             <tr>
-              <th class="px-3 py-3 text-left">Match</th>
-              <th class="px-3 py-3 text-left">Stage</th>
-              <th class="px-3 py-3 text-center">Your pick</th>
-              <th class="px-3 py-3 text-center">Result</th>
-              <th class="px-3 py-3 text-right">Points</th>
+              <th class="px-3 py-3 text-left">{{ 'pf.match' | t }}</th>
+              <th class="px-3 py-3 text-left">{{ 'pf.stage' | t }}</th>
+              <th class="px-3 py-3 text-center">{{ 'pf.yourPick' | t }}</th>
+              <th class="px-3 py-3 text-center">{{ 'pf.result' | t }}</th>
+              <th class="px-3 py-3 text-right">{{ 'pf.points' | t }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-white/5">
@@ -207,6 +209,7 @@ export class ProfileComponent implements OnInit {
   readonly lb = inject(LeaderboardService);
   readonly outright = inject(OutrightService);
   private readonly predictions = inject(PredictionsService);
+  private readonly i18n = inject(I18nService);
 
   readonly outrightPoints = OUTRIGHT_POINTS;
   readonly loading = signal(true);
@@ -234,6 +237,7 @@ export class ProfileComponent implements OnInit {
   });
 
   private readonly rounds = computed(() => {
+    this.i18n.lang();
     const map = new Map<string, { label: string; points: number }>();
     for (const r of this.scored()) {
       const { key, label } = this.roundKey(r);
@@ -273,8 +277,10 @@ export class ProfileComponent implements OnInit {
 
   private roundKey(r: PredictionHistoryRow): { key: string; label: string } {
     const m = r.match;
-    if (m.stage === 'group') return { key: 'g' + (m.matchday ?? 0), label: 'MD' + (m.matchday ?? '?') };
-    return { key: m.stage, label: STAGE_LABEL[m.stage] };
+    if (m.stage === 'group') {
+      return { key: 'g' + (m.matchday ?? 0), label: this.i18n.t('dash.md', { n: m.matchday ?? 0 }) };
+    }
+    return { key: m.stage, label: this.i18n.t('stage.' + m.stage) };
   }
   readonly outrightTeam = computed(() => {
     const id = this.outright.myPick()?.team_id;
@@ -307,7 +313,8 @@ export class ProfileComponent implements OnInit {
   }
 
   stageLabel(row: PredictionHistoryRow): string {
-    return STAGE_LABEL[row.match.stage];
+    this.i18n.lang();
+    return this.i18n.t('stage.' + row.match.stage);
   }
 
   kickoff(row: PredictionHistoryRow): string {

@@ -15,19 +15,22 @@ import { MatchesService } from '../../core/matches.service';
 import { TournamentService } from '../../core/tournament.service';
 import { PredictionsService } from '../../core/predictions.service';
 import { LeaderboardService } from '../../core/leaderboard.service';
-import {
-  MatchWithPrediction,
-  STAGE_LABEL,
-  STAGE_ORDER,
-  MatchStage
-} from '../../core/models';
+import { I18nService } from '../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { MatchWithPrediction, STAGE_ORDER, MatchStage } from '../../core/models';
 
 type Filter = 'todo' | 'open' | 'live' | 'upcoming' | 'finished' | 'all';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, MatchCardComponent, LoadingSpinnerComponent, CountdownComponent],
+  imports: [
+    RouterLink,
+    MatchCardComponent,
+    LoadingSpinnerComponent,
+    CountdownComponent,
+    TranslatePipe
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- brand masthead -->
@@ -41,9 +44,7 @@ type Filter = 'todo' | 'open' | 'live' | 'upcoming' | 'finished' | 'all';
         <h1 class="font-display text-2xl font-extrabold leading-tight sm:text-3xl">
           Kufli<span class="text-pitch-400"> TippJáték</span>
         </h1>
-        <p class="mt-0.5 text-sm text-slate-400">
-          Champions League predictions · exact score = 5 pts · outright winner = 15 pts
-        </p>
+        <p class="mt-0.5 text-sm text-slate-400">{{ 'dash.tagline' | t }}</p>
       </div>
     </header>
 
@@ -54,11 +55,8 @@ type Filter = 'todo' | 'open' | 'live' | 'upcoming' | 'finished' | 'all';
         (click)="filter.set('todo')"
       >
         <span class="text-lg">⚠️</span>
-        <span class="flex-1">
-          <strong class="tabular-nums">{{ missingPicks() }}</strong> open match{{ missingPicks() === 1 ? '' : 'es' }}
-          still need{{ missingPicks() === 1 ? 's' : '' }} a prediction.
-        </span>
-        <span class="chip shrink-0 border-flame-500/40 bg-flame-500/10 text-flame-200">Show →</span>
+        <span class="flex-1">{{ 'dash.missing' | t: { n: missingPicks() } }}</span>
+        <span class="chip shrink-0 border-flame-500/40 bg-flame-500/10 text-flame-200">{{ 'c.show' | t }}</span>
       </button>
     }
 
@@ -66,42 +64,40 @@ type Filter = 'todo' | 'open' | 'live' | 'upcoming' | 'finished' | 'all';
     @if (tournament.phase() === 'pre') {
       <div class="card mb-6 flex flex-col items-start gap-3 border-pitch-400/30 bg-pitch-400/5 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 class="font-display text-lg font-bold">The tournament hasn't kicked off yet</h2>
-          <p class="mt-1 text-sm text-slate-400">
-            Match betting opens with the group stage. For now, lock in your pick for the trophy —
-            worth <strong class="text-pitch-300">15 points</strong>.
-          </p>
+          <h2 class="font-display text-lg font-bold">{{ 'dash.preTitle' | t }}</h2>
+          <p class="mt-1 text-sm text-slate-400">{{ 'dash.preBody' | t }}</p>
         </div>
-        <a routerLink="/outright" class="btn-primary shrink-0">Pick the winner →</a>
+        <a routerLink="/outright" class="btn-primary shrink-0">{{ 'dash.pickWinner' | t }}</a>
       </div>
     }
 
     <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 class="font-display text-xl font-extrabold">Matches</h2>
+        <h2 class="font-display text-xl font-extrabold">{{ 'dash.matches' | t }}</h2>
         @if (nextDeadline(); as d) {
           <p class="mt-1 text-sm text-slate-400">
-            Next kickoff <app-countdown [target]="d" prefix="in " class="font-semibold text-pitch-300" />
-            · {{ openCount() }} match{{ openCount() === 1 ? '' : 'es' }} open for predictions
+            {{ 'dash.nextKickoff' | t }}
+            <app-countdown [target]="d" class="font-semibold text-pitch-300" />
+            · {{ 'dash.openForPred' | t: { n: openCount() } }}
           </p>
         } @else {
-          <p class="mt-1 text-sm text-slate-400">No matches are open for predictions right now.</p>
+          <p class="mt-1 text-sm text-slate-400">{{ 'dash.noneOpen' | t }}</p>
         }
       </div>
 
       <div class="flex flex-wrap gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
-        @for (f of filters; track f.key) {
+        @for (key of filterKeys; track key) {
           <button
             class="rounded-lg px-3 py-1.5 text-xs font-semibold transition"
-            [class]="filter() === f.key ? 'bg-pitch-500 text-night-950' : 'text-slate-300 hover:text-white'"
-            [title]="f.hint"
-            (click)="filter.set(f.key)"
+            [class]="filter() === key ? 'bg-pitch-500 text-night-950' : 'text-slate-300 hover:text-white'"
+            [title]="'filter.' + key + '.hint' | t"
+            (click)="filter.set(key)"
           >
-            {{ f.label }}
-            @if (f.key === 'live' && liveCount() > 0) {
+            {{ 'filter.' + key | t }}
+            @if (key === 'live' && liveCount() > 0) {
               <span class="ml-1 rounded-full bg-rose-500 px-1.5 text-[10px] text-white">{{ liveCount() }}</span>
             }
-            @if (f.key === 'todo' && missingPicks() > 0) {
+            @if (key === 'todo' && missingPicks() > 0) {
               <span
                 class="ml-1 rounded-full px-1.5 text-[10px]"
                 [class]="filter() === 'todo' ? 'bg-night-950/30 text-night-950' : 'bg-flame-500 text-white'"
@@ -125,7 +121,8 @@ type Filter = 'todo' | 'open' | 'live' | 'upcoming' | 'finished' | 'all';
               [class]="matchdayFilter() === 'all' ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white'"
               (click)="matchdayFilter.set('all')"
             >
-              All<span class="hidden sm:inline"> rounds</span>
+              <span class="sm:hidden">{{ 'filter.all' | t }}</span>
+              <span class="hidden sm:inline">{{ 'dash.allRounds' | t }}</span>
             </button>
             @for (md of matchdays(); track md) {
               <button
@@ -133,7 +130,7 @@ type Filter = 'todo' | 'open' | 'live' | 'upcoming' | 'finished' | 'all';
                 [class]="matchdayFilter() === md ? 'bg-pitch-500 text-night-950' : 'text-slate-300 hover:text-white'"
                 (click)="matchdayFilter.set(md)"
               >
-                <span class="hidden sm:inline">MD</span>{{ md }}
+                {{ 'dash.md' | t: { n: md } }}
               </button>
             }
           </div>
@@ -142,16 +139,16 @@ type Filter = 'todo' | 'open' | 'live' | 'upcoming' | 'finished' | 'all';
 
       <input
         class="input min-w-[10rem] flex-1 !py-1.5 text-xs sm:!w-auto"
-        placeholder="Filter by team…"
+        [placeholder]="'dash.filterTeam' | t"
         [value]="teamQuery()"
         (input)="teamQuery.set($any($event.target).value)"
       />
 
       @if (matchdayFilter() !== 'all' || teamQuery().trim()) {
-        <button class="btn-ghost !px-3 !py-1.5 text-xs" (click)="clearExtra()">Clear</button>
+        <button class="btn-ghost !px-3 !py-1.5 text-xs" (click)="clearExtra()">{{ 'c.clear' | t }}</button>
       }
       <span class="ml-auto shrink-0 text-xs text-slate-500">
-        {{ shownCount() }} shown
+        {{ 'dash.shown' | t: { n: shownCount() } }}
       </span>
     </div>
 
@@ -165,15 +162,15 @@ type Filter = 'todo' | 'open' | 'live' | 'upcoming' | 'finished' | 'all';
     }
 
     @if (matches.loading() && matches.matches().length === 0) {
-      <app-loading-spinner label="Loading fixtures…" />
+      <app-loading-spinner [label]="'dash.loadingFixtures' | t" />
     } @else if (sections().length === 0) {
       <div class="card p-10 text-center text-slate-400">
         @if (filter() === 'todo') {
           <p class="text-3xl">🎉</p>
-          <p class="mt-2 text-sm">All caught up — every open match has a prediction.</p>
+          <p class="mt-2 text-sm">{{ 'dash.caughtUp' | t }}</p>
         } @else {
           <p class="text-3xl">🗓️</p>
-          <p class="mt-2 text-sm">Nothing to show for this filter yet.</p>
+          <p class="mt-2 text-sm">{{ 'dash.nothing' | t }}</p>
         }
       </div>
     } @else {
@@ -198,6 +195,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly tournament = inject(TournamentService);
   private readonly predictions = inject(PredictionsService);
   private readonly leaderboard = inject(LeaderboardService);
+  private readonly i18n = inject(I18nService);
 
   readonly filter = signal<Filter>('open');
   readonly matchdayFilter = signal<number | 'all'>('all');
@@ -205,14 +203,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly savingId = signal<string | null>(null);
   readonly toast = signal<{ ok: boolean; msg: string } | null>(null);
 
-  readonly filters: { key: Filter; label: string; hint: string }[] = [
-    { key: 'todo', label: 'To do', hint: 'Open matches you have not predicted yet' },
-    { key: 'open', label: 'Open', hint: 'Not kicked off yet and betting is open — you can still predict these' },
-    { key: 'live', label: 'Live', hint: 'Matches being played right now' },
-    { key: 'upcoming', label: 'Upcoming', hint: 'Every scheduled match, including ones locked until the phase opens' },
-    { key: 'finished', label: 'Finished', hint: 'Played matches with their result and your points' },
-    { key: 'all', label: 'All', hint: 'Every match in the tournament, whatever its state' }
-  ];
+  readonly filterKeys: Filter[] = ['todo', 'open', 'live', 'upcoming', 'finished', 'all'];
 
   private unsub?: () => void;
   private ticker?: ReturnType<typeof setInterval>;
@@ -276,9 +267,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
         (desc ? -1 : 1) * (+new Date(a.kickoff_at) - +new Date(b.kickoff_at))
     );
 
+    this.i18n.lang();
     return STAGE_ORDER.map((stage: MatchStage) => ({
       stage,
-      label: STAGE_LABEL[stage],
+      label: this.i18n.t('stage.' + stage),
       matches: list.filter((m) => m.stage === stage)
     })).filter((s) => s.matches.length > 0);
   });

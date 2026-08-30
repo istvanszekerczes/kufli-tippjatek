@@ -1,21 +1,19 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { OUTRIGHT_POINTS, SCORING_RULES } from '../../core/models';
+import { OUTRIGHT_POINTS } from '../../core/models';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-rules',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mx-auto max-w-3xl">
-      <h1 class="font-display text-2xl font-extrabold">How it works</h1>
-      <p class="mt-1 text-sm text-slate-400">
-        Predict scorelines, call the tournament winner, and rack up points. Highest matching rule
-        always wins — the rules below are checked from the top down.
-      </p>
+      <h1 class="font-display text-2xl font-extrabold">{{ 'rules.title' | t }}</h1>
+      <p class="mt-1 text-sm text-slate-400">{{ 'rules.intro' | t }}</p>
 
-      <h2 class="mt-8 text-sm font-bold uppercase tracking-wide text-slate-400">Match scoring</h2>
+      <h2 class="mt-8 text-sm font-bold uppercase tracking-wide text-slate-400">{{ 'rules.matchScoring' | t }}</h2>
       <div class="mt-3 space-y-3">
         @for (rule of rules; track rule.points) {
           <div class="card flex items-start gap-4 p-4">
@@ -26,54 +24,43 @@ import { OUTRIGHT_POINTS, SCORING_RULES } from '../../core/models';
               {{ rule.points }}
             </span>
             <div>
-              <p class="font-semibold">{{ rule.title }}</p>
-              <p class="mt-0.5 text-sm text-slate-400">{{ rule.example }}</p>
+              <p class="font-semibold">{{ 'rules.r' + rule.points + '.title' | t }}</p>
+              <p class="mt-0.5 text-sm text-slate-400">{{ 'rules.r' + rule.points + '.ex' | t }}</p>
             </div>
           </div>
         }
       </div>
 
-      <h2 class="mt-8 text-sm font-bold uppercase tracking-wide text-slate-400">Outright winner</h2>
+      <h2 class="mt-8 text-sm font-bold uppercase tracking-wide text-slate-400">{{ 'rules.outrightTitle' | t }}</h2>
       <div class="card mt-3 p-4 text-sm text-slate-300">
-        Before the first match kicks off, pick the team you think will lift the trophy. A correct call
-        is worth <strong class="text-pitch-300">{{ outrightPoints }} points</strong>. Once the
-        tournament starts, your pick is locked.
+        {{ 'rules.outrightBody' | t: { n: outrightPoints } }}
       </div>
 
-      <h2 class="mt-8 text-sm font-bold uppercase tracking-wide text-slate-400">Game phases</h2>
+      <h2 class="mt-8 text-sm font-bold uppercase tracking-wide text-slate-400">{{ 'rules.phasesTitle' | t }}</h2>
       <ol class="mt-3 space-y-3">
-        <li class="card p-4 text-sm text-slate-300">
-          <strong class="text-slate-100">1 · Pre-tournament.</strong> Only the outright winner market
-          is open. Match betting is closed.
-        </li>
-        <li class="card p-4 text-sm text-slate-300">
-          <strong class="text-slate-100">2 · Group stage.</strong> Predictions open for all group
-          matches. Each match locks at kickoff.
-        </li>
-        <li class="card p-4 text-sm text-slate-300">
-          <strong class="text-slate-100">3 · Knockout stage.</strong> When the group stage ends,
-          betting unlocks for the Round of 16, Quarter-finals, Semi-finals and Final as the draws are
-          confirmed.
-        </li>
+        <li class="card p-4 text-sm text-slate-300">{{ 'rules.phase1' | t }}</li>
+        <li class="card p-4 text-sm text-slate-300">{{ 'rules.phase2' | t }}</li>
+        <li class="card p-4 text-sm text-slate-300">{{ 'rules.phase3' | t }}</li>
       </ol>
 
-      <h2 class="mt-8 text-sm font-bold uppercase tracking-wide text-slate-400">Good to know</h2>
+      <h2 class="mt-8 text-sm font-bold uppercase tracking-wide text-slate-400">{{ 'rules.gtkTitle' | t }}</h2>
       <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-300">
-        <li>A prediction can be edited as many times as you like until kickoff.</li>
-        <li>Scores and match statuses update automatically from the fixtures feed.</li>
-        <li>Points are awarded within seconds of a match being marked <em>finished</em>.</li>
-        <li>The leaderboard ranks by total points; ties share a rank.</li>
+        <li>{{ 'rules.gtk1' | t }}</li>
+        <li>{{ 'rules.gtk2' | t }}</li>
+        <li>{{ 'rules.gtk3' | t }}</li>
+        <li>{{ 'rules.gtk4' | t }}</li>
+        <li>{{ 'rules.gtk5' | t }}</li>
       </ul>
 
       <div class="mt-8 flex gap-3">
-        <a routerLink="/" class="btn-primary">Start predicting</a>
-        <a routerLink="/leaderboard" class="btn-ghost">See the leaderboard</a>
+        <a routerLink="/" class="btn-primary">{{ 'rules.startPredicting' | t }}</a>
+        <a routerLink="/leaderboard" class="btn-ghost">{{ 'rules.seeLeaderboard' | t }}</a>
       </div>
     </div>
   `
 })
 export class RulesComponent {
-  readonly rules = SCORING_RULES;
+  readonly rules = [{ points: 5 }, { points: 3 }, { points: 2 }, { points: 1 }, { points: 0 }];
   readonly outrightPoints = OUTRIGHT_POINTS;
 
   badge(points: number): string {
