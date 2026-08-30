@@ -79,6 +79,7 @@ type Filter = 'open' | 'live' | 'upcoming' | 'finished' | 'all';
           <button
             class="rounded-lg px-3 py-1.5 text-xs font-semibold transition"
             [class]="filter() === f.key ? 'bg-pitch-500 text-night-950' : 'text-slate-300 hover:text-white'"
+            [title]="f.hint"
             (click)="filter.set(f.key)"
           >
             {{ f.label }}
@@ -93,26 +94,37 @@ type Filter = 'open' | 'live' | 'upcoming' | 'finished' | 'all';
     <!-- narrow-down filters so you don't have to scroll -->
     <div class="mb-5 flex flex-wrap items-center gap-2">
       @if (matchdays().length) {
-        <select
-          class="input !w-auto !py-1.5 text-xs"
-          (change)="setMatchday($any($event.target).value)"
-        >
-          <option value="all" [selected]="matchdayFilter() === 'all'">All rounds</option>
+        <div class="flex flex-wrap gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
+          <button
+            class="rounded-lg px-2.5 py-1.5 text-xs font-semibold transition"
+            [class]="matchdayFilter() === 'all' ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white'"
+            (click)="matchdayFilter.set('all')"
+          >
+            All rounds
+          </button>
           @for (md of matchdays(); track md) {
-            <option [value]="md" [selected]="matchdayFilter() === md">Matchday {{ md }}</option>
+            <button
+              class="rounded-lg px-2.5 py-1.5 text-xs font-semibold tabular-nums transition"
+              [class]="matchdayFilter() === md ? 'bg-pitch-500 text-night-950' : 'text-slate-300 hover:text-white'"
+              (click)="matchdayFilter.set(md)"
+            >
+              MD{{ md }}
+            </button>
           }
-        </select>
+        </div>
       }
+
       <input
-        class="input !w-auto min-w-[11rem] flex-1 !py-1.5 text-xs"
+        class="input !w-auto min-w-[10rem] flex-1 !py-1.5 text-xs"
         placeholder="Filter by team…"
         [value]="teamQuery()"
         (input)="teamQuery.set($any($event.target).value)"
       />
+
       @if (matchdayFilter() !== 'all' || teamQuery().trim()) {
         <button class="btn-ghost !px-3 !py-1.5 text-xs" (click)="clearExtra()">Clear</button>
       }
-      <span class="ml-auto text-xs text-slate-500">
+      <span class="ml-auto shrink-0 text-xs text-slate-500">
         {{ shownCount() }} match{{ shownCount() === 1 ? '' : 'es' }} shown
       </span>
     </div>
@@ -162,12 +174,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly savingId = signal<string | null>(null);
   readonly toast = signal<{ ok: boolean; msg: string } | null>(null);
 
-  readonly filters: { key: Filter; label: string }[] = [
-    { key: 'open', label: 'Open' },
-    { key: 'live', label: 'Live' },
-    { key: 'upcoming', label: 'Upcoming' },
-    { key: 'finished', label: 'Finished' },
-    { key: 'all', label: 'All' }
+  readonly filters: { key: Filter; label: string; hint: string }[] = [
+    { key: 'open', label: 'Open', hint: 'Not kicked off yet and betting is open — you can still predict these' },
+    { key: 'live', label: 'Live', hint: 'Matches being played right now' },
+    { key: 'upcoming', label: 'Upcoming', hint: 'Every scheduled match, including ones locked until the phase opens' },
+    { key: 'finished', label: 'Finished', hint: 'Played matches with their result and your points' },
+    { key: 'all', label: 'All', hint: 'Every match in the tournament, whatever its state' }
   ];
 
   private unsub?: () => void;
@@ -262,10 +274,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     } finally {
       this.savingId.set(null);
     }
-  }
-
-  setMatchday(v: string): void {
-    this.matchdayFilter.set(v === 'all' ? 'all' : Number(v));
   }
 
   clearExtra(): void {
