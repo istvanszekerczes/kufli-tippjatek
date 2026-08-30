@@ -8,12 +8,13 @@ import {
 } from '@angular/core';
 import { CountdownComponent } from './countdown.component';
 import { TeamCrestComponent } from './team-crest.component';
+import { ScoreStepperComponent } from './score-stepper.component';
 import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
 
 @Component({
   selector: 'app-match-card',
   standalone: true,
-  imports: [CountdownComponent, TeamCrestComponent],
+  imports: [CountdownComponent, TeamCrestComponent, ScoreStepperComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card animate-fade-in p-4 sm:p-5">
@@ -70,30 +71,23 @@ import { MatchWithPrediction, STAGE_LABEL, Team } from '../../core/models';
       <!-- prediction row -->
       <div class="mt-4 border-t border-white/10 pt-4">
         @if (m().is_open) {
-          <div class="flex items-center justify-center gap-3">
-            <span class="label mb-0 hidden sm:block">Your pick</span>
-            <input
-              type="number"
-              min="0"
-              max="99"
-              inputmode="numeric"
-              class="score-input"
-              [value]="home() ?? ''"
-              (input)="home.set(clamp($any($event.target).value))"
-              [attr.aria-label]="'Predicted goals for ' + name(m().home_team)"
+          <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-3">
+            <app-score-stepper
+              [value]="home()"
+              (valueChange)="home.set($event)"
+              [ariaLabel]="'Predicted goals for ' + name(m().home_team)"
             />
             <span class="text-lg font-bold text-slate-500">–</span>
-            <input
-              type="number"
-              min="0"
-              max="99"
-              inputmode="numeric"
-              class="score-input"
-              [value]="away() ?? ''"
-              (input)="away.set(clamp($any($event.target).value))"
-              [attr.aria-label]="'Predicted goals for ' + name(m().away_team)"
+            <app-score-stepper
+              [value]="away()"
+              (valueChange)="away.set($event)"
+              [ariaLabel]="'Predicted goals for ' + name(m().away_team)"
             />
-            <button class="btn-primary" [disabled]="!canSave() || busy()" (click)="emitSave()">
+            <button
+              class="btn-primary w-full sm:w-auto"
+              [disabled]="!canSave() || busy()"
+              (click)="emitSave()"
+            >
               {{ hasPick() ? 'Update' : 'Submit' }}
             </button>
           </div>
@@ -141,13 +135,6 @@ export class MatchCardComponent {
     if (h < 0 || a < 0 || h > 99 || a > 99) return false;
     return h !== this.m().my_home || a !== this.m().my_away || !this.hasPick();
   });
-
-  clamp(v: string): number | null {
-    if (v === '' || v === null || v === undefined) return null;
-    const n = Math.floor(Number(v));
-    if (Number.isNaN(n)) return null;
-    return Math.max(0, Math.min(99, n));
-  }
 
   emitSave(): void {
     const h = this.home();
