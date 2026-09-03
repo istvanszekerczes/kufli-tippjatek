@@ -15,6 +15,9 @@
     "build:ci": "node scripts/set-env.js && ng build",
     "watch": "ng build --watch --configuration development",
     "sync": "node scripts/sync-fixtures.mjs",
+    "test": "node tests/unit.mjs && node tests/e2e.mjs",
+    "test:unit": "node tests/unit.mjs",
+    "test:e2e": "node tests/e2e.mjs",
     "lint": "ng lint"
   },
   "dependencies": {
