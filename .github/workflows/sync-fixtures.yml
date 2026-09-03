@@ -24,12 +24,21 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
+      - name: Check required secrets are present
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: |
+          node -e "const u=process.env.SUPABASE_URL||'',k=process.env.SUPABASE_SECRET_KEY||''; \
+            console.log('SUPABASE_URL length:', u.length, u ? '(starts '+u.slice(0,20)+'…)' : '(EMPTY)'); \
+            console.log('SUPABASE_SECRET_KEY length:', k.length, k ? '(starts '+k.slice(0,10)+'…)' : '(EMPTY)'); \
+            if(!u||!k){console.error('>>> One or both repo secrets are missing/empty.');process.exit(1);}"
       - run: npm run sync
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

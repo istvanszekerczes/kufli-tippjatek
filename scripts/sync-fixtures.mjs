@@ -48,25 +48,36 @@ const args = Object.fromEntries(
   })
 );
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SECRET_KEY =
-  process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const provider = args.provider || process.env.FOOTBALL_API_PROVIDER || 'uefa';
-const apiKey = args.key || process.env.FOOTBALL_API_KEY || '';
+// tolerate values pasted into GitHub secrets with stray whitespace / quotes
+const clean = (v) => (v || '').trim().replace(/^["']|["']$/g, '');
+const SUPABASE_URL = clean(process.env.SUPABASE_URL).replace(/\/+$/, '');
+const SECRET_KEY = clean(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
+const provider = clean(args.provider || process.env.FOOTBALL_API_PROVIDER) || 'uefa';
+const apiKey = clean(args.key || process.env.FOOTBALL_API_KEY);
 const season =
-  args.season ||
-  process.env.FOOTBALL_API_SEASON ||
+  clean(args.season || process.env.FOOTBALL_API_SEASON) ||
   (provider === 'uefa' ? '2027' : '2026');
+
+console.log(
+  `[sync] url=${SUPABASE_URL || '(empty)'} ` +
+    `keyLen=${SECRET_KEY.length} keyLooksSecret=${/^sb_secret_|^ey/.test(SECRET_KEY)}`
+);
 
 if (!SUPABASE_URL || !SECRET_KEY) {
   console.error(
-    'Missing SUPABASE_URL and/or SUPABASE_SECRET_KEY (a sb_secret_... key).\n' +
-      'Add them to .env or the environment.'
+    'Missing SUPABASE_URL and/or SUPABASE_SECRET_KEY. Add them as GitHub repo\n' +
+      'secrets (Settings -> Secrets and variables -> Actions) or to your local .env.'
   );
   process.exit(1);
 }
+if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(SUPABASE_URL)) {
+  console.warn(`[sync] warning: SUPABASE_URL "${SUPABASE_URL}" is not the expected https://<ref>.supabase.co form.`);
+}
 if (!/^sb_secret_|^ey/.test(SECRET_KEY)) {
-  console.warn('[sync] warning: SUPABASE_SECRET_KEY does not look like a secret/service key.');
+  console.warn(
+    '[sync] warning: SUPABASE_SECRET_KEY does not look like a secret key (sb_secret_...) ' +
+      'or a service_role JWT. Did you paste the publishable key by mistake?'
+  );
 }
 
 const db = createClient(SUPABASE_URL, SECRET_KEY, { auth: { persistSession: false } });
