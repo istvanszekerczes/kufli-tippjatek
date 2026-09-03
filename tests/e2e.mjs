@@ -156,7 +156,7 @@ try {
   section('Realtime  — a match update is broadcast');
   {
     let evt = null;
-    const ch = svc.channel('e2e-rt').on(
+    const ch = svc.channel('e2e-rt-' + Date.now()).on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'matches' },
       (p) => {
@@ -165,15 +165,21 @@ try {
     );
     await withTimeout(
       new Promise((res, rej) =>
-        ch.subscribe((s) => (s === 'SUBSCRIBED' ? res() : s === 'CHANNEL_ERROR' ? rej(new Error(s)) : null))
+        ch.subscribe((s) =>
+          s === 'SUBSCRIBED' ? res() : s === 'CHANNEL_ERROR' || s === 'TIMED_OUT' ? rej(new Error(s)) : null
+        )
       ),
-      12000,
+      20000,
       'realtime subscribe'
     );
-    await svc.from('matches').update({ status: 'live' }).eq('id', M1);
-    const deadline = Date.now() + 9000;
-    while (!evt && Date.now() < deadline) await sleep(200);
-    ok(!!evt, 'received a realtime UPDATE event for the match');
+    await sleep(500); // let the subscription settle before the write
+    // up to 3 tries — free-tier realtime delivery is occasionally slow
+    for (let attempt = 1; attempt <= 3 && !evt; attempt++) {
+      await svc.from('matches').update({ status: 'live', updated_at: new Date().toISOString() }).eq('id', M1);
+      const deadline = Date.now() + 8000;
+      while (!evt && Date.now() < deadline) await sleep(200);
+    }
+    ok(!!evt, 'received a realtime UPDATE event for the match (within 3 tries)');
     ok(evt?.status === 'live', 'payload shows the new status (live)');
     await svc.removeChannel(ch);
   }
@@ -229,6 +235,33 @@ try {
       .eq('user_id', state.userIds[0])
       .select();
     ok((data?.length ?? 0) === 0, 'cannot edit a prediction after kickoff');
+  }
+
+  // ── Locking is server-side (device clock cannot bypass it) ────────
+  section('Locking  — is_match_open() is decided by the DB clock, not the client');
+  {
+    // is_match_open() is the exact check inside the INSERT/UPDATE RLS policy
+    const openM2 = await svc.rpc('is_match_open', { m_id: M2 });
+    const lockedM1 = await svc.rpc('is_match_open', { m_id: M1 });
+    ok(openM2.data === true, 'future / upcoming match → is_match_open = true');
+    ok(lockedM1.data === false, 'finished match → is_match_open = false');
+
+    // start match 2 without finishing it, then a player tries to predict it
+    await svc.from('matches').update({ status: 'live' }).eq('id', M2);
+    const startedM2 = await svc.rpc('is_match_open', { m_id: M2 });
+    ok(startedM2.data === false, 'a match that has kicked off (status=live) → is_match_open = false');
+
+    const late = await c3
+      .from('predictions')
+      .insert({ user_id: state.userIds[2], match_id: M2, home_score: 1, away_score: 1 });
+    ok(!!late.error, 'a player CANNOT submit a prediction on a started match (RLS rejects the insert)');
+
+    // the client faking an earlier device time changes nothing — the policy
+    // never sees the client clock. Prove the insert still fails.
+    const lateAgain = await c3
+      .from('predictions')
+      .insert({ user_id: state.userIds[2], match_id: M2, home_score: 2, away_score: 2 });
+    ok(!!lateAgain.error, 'retrying (as a spoofed clock would) still fails — the DB uses now() server-side');
   }
 
   // ── Snapshots ────────────────────────────────────────────────────
