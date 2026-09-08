@@ -3,13 +3,13 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { LeaderboardService } from '../../core/leaderboard.service';
 import { PushService } from '../../core/push.service';
-import { I18nService } from '../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { SettingsMenuComponent } from './settings-menu.component';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, TranslatePipe],
+  imports: [RouterLink, RouterLinkActive, TranslatePipe, SettingsMenuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="sticky top-0 z-40 border-b border-white/10 bg-night-950/80 backdrop-blur-lg">
@@ -42,30 +42,7 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
         </div>
 
         <div class="ml-auto flex items-center gap-2">
-          <button
-            class="btn-ghost grid h-9 w-9 place-items-center !p-0 text-xs font-bold"
-            (click)="i18n.toggle()"
-            [title]="i18n.lang() === 'hu' ? 'Váltás angolra' : 'Switch to Hungarian'"
-          >
-            {{ i18n.lang() === 'hu' ? 'HU' : 'EN' }}
-          </button>
-
-          @if (push.supported && push.permission() !== 'denied') {
-            <button
-              class="btn-ghost grid h-9 w-9 place-items-center !p-0 text-sm"
-              [class.!text-pitch-400]="push.enabled()"
-              [disabled]="push.busy()"
-              (click)="toggleNotifs()"
-              [title]="
-                push.enabled()
-                  ? (i18n.lang() === 'hu' ? 'Értesítések kikapcsolása' : 'Turn notifications off')
-                  : (i18n.lang() === 'hu' ? 'Emlékeztető, ha nincs tipped' : 'Remind me about missing tips')
-              "
-              aria-label="notifications"
-            >
-              {{ push.enabled() ? '🔕' : '🔔' }}
-            </button>
-          }
+          <app-settings-menu />
 
           @if (lb.me(); as me) {
             <a
@@ -122,7 +99,6 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
 export class NavbarComponent {
   readonly auth = inject(AuthService);
   readonly lb = inject(LeaderboardService);
-  readonly i18n = inject(I18nService);
   readonly push = inject(PushService);
   readonly open = signal(false);
 
@@ -140,21 +116,6 @@ export class NavbarComponent {
         void this.push.refresh();
       }
     });
-  }
-
-  async toggleNotifs(): Promise<void> {
-    if (this.push.enabled()) {
-      await this.push.disable();
-    } else {
-      const r = await this.push.enable();
-      if (!r.ok && r.reason === 'denied') {
-        alert(
-          this.i18n.lang() === 'hu'
-            ? 'Az értesítések le vannak tiltva a böngésződben. Engedélyezd a webhely beállításainál.'
-            : 'Notifications are blocked in your browser. Allow them in the site settings.'
-        );
-      }
-    }
   }
 
   initial(): string {

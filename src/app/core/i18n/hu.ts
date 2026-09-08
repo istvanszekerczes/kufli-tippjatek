@@ -57,6 +57,13 @@ export const hu: Record<string, string> = {
   "auth.resetDone": "Jelszó frissítve – be vagy jelentkezve.",
   "auth.resetNoSession": "Ez a visszaállító link érvénytelen vagy lejárt.",
 
+  // settings
+  'settings.language': 'Nyelv',
+  'settings.notifs': 'Értesítések',
+  'settings.notifsBlocked': 'A böngésződ letiltotta',
+  'settings.notifsUnsupported': 'Ezen az eszközön nem támogatott',
+  'settings.notifsIos': 'Előbb tedd ki a kezdőképernyőre (Megosztás → Kezdőképernyőhöz adás)',
+
   // dashboard
   'dash.tagline':
     'Bajnokok Ligája tippjáték · pontos eredmény = 5 pont · végső győztes = 15 pont',

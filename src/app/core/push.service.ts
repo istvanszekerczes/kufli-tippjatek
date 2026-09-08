@@ -18,6 +18,14 @@ export class PushService {
     'PushManager' in window &&
     'Notification' in window;
 
+  /** iOS Safari only exposes push once the app is added to the Home Screen. */
+  readonly iosNeedsInstall =
+    typeof navigator !== 'undefined' &&
+    /iphone|ipad|ipod/i.test(navigator.userAgent) &&
+    !(navigator as any).standalone &&
+    !window.matchMedia?.('(display-mode: standalone)').matches &&
+    !this.supported;
+
   readonly permission = signal<NotificationPermission>(
     this.supported ? Notification.permission : 'denied'
   );

@@ -56,6 +56,13 @@ export const en: Record<string, string> = {
   "auth.resetDone": "Password updated — you are signed in.",
   "auth.resetNoSession": "This reset link is invalid or has expired.",
 
+  // settings
+  'settings.language': 'Language',
+  'settings.notifs': 'Notifications',
+  'settings.notifsBlocked': 'Blocked in your browser',
+  'settings.notifsUnsupported': 'Not supported on this device',
+  'settings.notifsIos': 'Add to Home Screen first (Share → Add to Home Screen)',
+
   // dashboard
   'dash.tagline': 'Champions League predictions · exact score = 5 pts · outright winner = 15 pts',
   'dash.matches': 'Matches',
