@@ -1,38 +1,48 @@
 -- ============================================================================
--- OPTIONAL — schedule sync-fixtures from inside Postgres (instead of, or in
--- addition to, the GitHub Actions workflow in .github/workflows/).
+-- Reliable sync scheduling, straight from Postgres.
 --
--- Requires the `pg_cron` and `pg_net` extensions:
---   Dashboard -> Database -> Extensions -> enable `pg_cron` and `pg_net`.
--- Run this file once in the SQL editor after editing the two secrets below.
+-- GitHub's scheduled workflows are best-effort and get throttled to once every
+-- few hours on low-traffic repos — no good during a matchday. pg_cron runs
+-- inside your database on the exact interval. It fires a tiny POST at the
+-- sync-fixtures Edge Function every 3 minutes; the function does the work.
+--
+-- SETUP (once):
+--   1. Dashboard → Database → Extensions → enable `pg_cron` and `pg_net`.
+--   2. Deploy the function:  supabase functions deploy sync-fixtures --no-verify-jwt
+--      and set its secrets (SUPABASE_SECRET_KEY, CRON_SECRET, FOOTBALL_API_PROVIDER=uefa).
+--   3. Edit the two values below, then run this whole file in the SQL editor.
 -- ============================================================================
 
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
--- 1. Store the function base URL and cron secret in Vault (run once, then
---    delete these two lines or they will error on re-run):
---
---   select vault.create_secret('https://<PROJECT_REF>.supabase.co/functions/v1', 'functions_base_url');
---   select vault.create_secret('<YOUR_CRON_SECRET>', 'cron_secret');
+-- >>> EDIT THESE TWO <<<
+--   FUNCTIONS_URL : https://<your-project-ref>.supabase.co/functions/v1
+--   CRON_SECRET   : the same value you set with `supabase secrets set CRON_SECRET=...`
 
--- 2. Schedule the job every 10 minutes.
-select cron.schedule(
-  'sync-fixtures-every-10-min',
-  '*/10 * * * *',
-  $$
-  select net.http_post(
-    url     := (select decrypted_secret from vault.decrypted_secrets where name = 'functions_base_url') || '/sync-fixtures',
-    headers := jsonb_build_object(
-      'Content-Type',  'application/json',
-      'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')
-    ),
-    body    := '{}'::jsonb
+do $$
+declare
+  functions_url text := 'https://qehmgeeejcnfsblkrvgq.supabase.co/functions/v1';
+  cron_secret   text := 'REPLACE_WITH_YOUR_CRON_SECRET';
+begin
+  -- clear any previous schedule of this job
+  perform cron.unschedule(jobid) from cron.job where jobname = 'kufli-sync';
+
+  perform cron.schedule(
+    'kufli-sync',
+    '*/3 * * * *',
+    format($cmd$
+      select net.http_post(
+        url     := %L,
+        headers := jsonb_build_object('Content-Type','application/json','x-cron-secret', %L),
+        body    := '{}'::jsonb
+      );
+    $cmd$, functions_url || '/sync-fixtures', cron_secret)
   );
-  $$
-);
+end $$;
 
--- To inspect or remove:
---   select * from cron.job;
---   select * from cron.job_run_details order by start_time desc limit 20;
---   select cron.unschedule('sync-fixtures-every-10-min');
+-- inspect:
+--   select jobname, schedule, active from cron.job;
+--   select * from cron.job_run_details order by start_time desc limit 10;
+-- remove:
+--   select cron.unschedule('kufli-sync');
