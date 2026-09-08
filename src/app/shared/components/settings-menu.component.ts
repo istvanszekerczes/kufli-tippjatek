@@ -27,10 +27,10 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
         >
           <!-- language -->
           <p class="label mb-1.5">{{ 'settings.language' | t }}</p>
-          <div class="flex gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+          <div class="grid grid-cols-2 gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
             @for (l of langs; track l) {
               <button
-                class="flex-1 rounded-md px-2 py-1.5 text-xs font-bold transition"
+                class="rounded-md px-2 py-1.5 text-xs font-bold transition"
                 [class]="
                   i18n.lang() === l ? 'bg-pitch-500 text-night-950' : 'text-slate-300 hover:text-white'
                 "
@@ -42,27 +42,34 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
           </div>
 
           <!-- notifications -->
-          <div class="mt-3 flex items-center justify-between gap-3">
-            <div class="min-w-0">
-              <p class="text-sm font-medium">{{ 'settings.notifs' | t }}</p>
-              @if (hint(); as h) {
-                <p class="text-[11px] leading-tight text-slate-500">{{ h }}</p>
-              }
-            </div>
+          <p class="label mb-1.5 mt-3">{{ 'settings.notifs' | t }}</p>
+          <div
+            class="grid grid-cols-2 gap-1 rounded-lg border border-white/10 bg-white/5 p-1 transition"
+            [class.pointer-events-none]="disabled()"
+            [class.opacity-40]="disabled()"
+          >
             <button
-              role="switch"
-              [attr.aria-checked]="push.enabled()"
-              class="relative h-6 w-11 shrink-0 rounded-full transition disabled:cursor-not-allowed disabled:opacity-40"
-              [class]="push.enabled() ? 'bg-pitch-500' : 'bg-white/15'"
-              [disabled]="push.busy() || !push.supported || push.permission() === 'denied'"
-              (click)="toggle()"
+              class="rounded-md px-2 py-1.5 text-xs font-bold transition"
+              [class]="
+                !push.enabled() ? 'bg-pitch-500 text-night-950' : 'text-slate-300 hover:text-white'
+              "
+              (click)="setNotifs(false)"
             >
-              <span
-                class="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all"
-                [class]="push.enabled() ? 'left-[22px]' : 'left-0.5'"
-              ></span>
+              {{ 'settings.off' | t }}
+            </button>
+            <button
+              class="rounded-md px-2 py-1.5 text-xs font-bold transition"
+              [class]="
+                push.enabled() ? 'bg-pitch-500 text-night-950' : 'text-slate-300 hover:text-white'
+              "
+              (click)="setNotifs(true)"
+            >
+              {{ 'settings.on' | t }}
             </button>
           </div>
+          @if (hint(); as h) {
+            <p class="mt-1.5 text-[11px] leading-tight text-slate-500">{{ h }}</p>
+          }
         </div>
       }
     </div>
@@ -74,6 +81,10 @@ export class SettingsMenuComponent {
   readonly open = signal(false);
   readonly langs: Lang[] = ['hu', 'en'];
 
+  disabled(): boolean {
+    return this.push.busy() || !this.push.supported || this.push.permission() === 'denied';
+  }
+
   hint(): string {
     if (this.push.iosNeedsInstall) return this.i18n.t('settings.notifsIos');
     if (!this.push.supported) return this.i18n.t('settings.notifsUnsupported');
@@ -81,8 +92,9 @@ export class SettingsMenuComponent {
     return '';
   }
 
-  async toggle(): Promise<void> {
-    if (this.push.enabled()) await this.push.disable();
-    else await this.push.enable();
+  async setNotifs(on: boolean): Promise<void> {
+    if (on === this.push.enabled()) return;
+    if (on) await this.push.enable();
+    else await this.push.disable();
   }
 }

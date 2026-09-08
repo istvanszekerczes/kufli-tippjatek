@@ -60,6 +60,8 @@ export const hu: Record<string, string> = {
   // settings
   'settings.language': 'Nyelv',
   'settings.notifs': 'Értesítések',
+  'settings.on': 'Be',
+  'settings.off': 'Ki',
   'settings.notifsBlocked': 'A böngésződ letiltotta',
   'settings.notifsUnsupported': 'Ezen az eszközön nem támogatott',
   'settings.notifsIos': 'Előbb tedd ki a kezdőképernyőre (Megosztás → Kezdőképernyőhöz adás)',

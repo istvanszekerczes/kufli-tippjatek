@@ -59,6 +59,8 @@ export const en: Record<string, string> = {
   // settings
   'settings.language': 'Language',
   'settings.notifs': 'Notifications',
+  'settings.on': 'On',
+  'settings.off': 'Off',
   'settings.notifsBlocked': 'Blocked in your browser',
   'settings.notifsUnsupported': 'Not supported on this device',
   'settings.notifsIos': 'Add to Home Screen first (Share → Add to Home Screen)',
