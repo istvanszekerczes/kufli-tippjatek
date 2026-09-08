@@ -43,16 +43,16 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
         <div class="ml-auto flex items-center gap-2">
           <button
-            class="btn-ghost !px-2.5 !py-2 text-xs font-bold"
+            class="btn-ghost grid h-9 w-9 place-items-center !p-0 text-xs font-bold"
             (click)="i18n.toggle()"
-            [title]="i18n.lang() === 'hu' ? 'Switch to English' : 'Váltás magyarra'"
+            [title]="i18n.lang() === 'hu' ? 'Váltás angolra' : 'Switch to Hungarian'"
           >
-            {{ i18n.lang() === 'hu' ? 'EN' : 'HU' }}
+            {{ i18n.lang() === 'hu' ? 'HU' : 'EN' }}
           </button>
 
           @if (push.supported && push.permission() !== 'denied') {
             <button
-              class="btn-ghost !px-2.5 !py-2 text-base"
+              class="btn-ghost grid h-9 w-9 place-items-center !p-0 text-sm"
               [class.!text-pitch-400]="push.enabled()"
               [disabled]="push.busy()"
               (click)="toggleNotifs()"
@@ -63,7 +63,7 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
               "
               aria-label="notifications"
             >
-              {{ push.enabled() ? '🔔' : '🔕' }}
+              {{ push.enabled() ? '🔕' : '🔔' }}
             </button>
           }
 
