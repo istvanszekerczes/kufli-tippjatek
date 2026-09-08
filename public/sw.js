@@ -1,6 +1,6 @@
 // Minimal service worker: network-first for same-origin GETs so online users
 // always get fresh content, with a cache fallback so the app opens offline.
-const CACHE = 'kufli-v1';
+const CACHE = 'kufli-v2';
 const SHELL = ['/', '/index.html', '/favicon.png', '/kufli-logo.png', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {

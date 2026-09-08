@@ -15,6 +15,7 @@
     "build:ci": "node scripts/set-env.js && ng build",
     "watch": "ng build --watch --configuration development",
     "sync": "node scripts/sync-fixtures.mjs",
+    "make-icons": "node scripts/make-icons.mjs",
     "test": "node tests/unit.mjs && node tests/e2e.mjs",
     "test:unit": "node tests/unit.mjs",
     "test:e2e": "node tests/e2e.mjs",
@@ -38,6 +39,7 @@
     "@angular/compiler-cli": "^21.2.0",
     "@types/node": "^20.17.19",
     "autoprefixer": "^10.4.20",
+    "pngjs": "^7.0.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.9.2"
