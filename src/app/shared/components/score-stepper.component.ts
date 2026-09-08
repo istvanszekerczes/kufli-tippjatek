@@ -50,7 +50,13 @@ export class ScoreStepperComponent {
   readonly valueChange = output<number | null>();
 
   bump(delta: number): void {
-    this.valueChange.emit(this.clamp((this.value() ?? 0) + delta));
+    const cur = this.value();
+    // first press on an empty field just starts the counter at 0
+    if (cur === null || cur === undefined) {
+      this.valueChange.emit(0);
+      return;
+    }
+    this.valueChange.emit(this.clamp(cur + delta));
   }
 
   onInput(e: Event): void {

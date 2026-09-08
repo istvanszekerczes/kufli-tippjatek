@@ -55,9 +55,9 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
             <tr>
               <th class="px-3 py-3 text-left">#</th>
               <th class="px-3 py-3 text-left">{{ 'lb.player' | t }}</th>
-              <th class="hidden px-3 py-3 text-right sm:table-cell">{{ 'lb.scored' | t }}</th>
-              <th class="hidden px-3 py-3 text-right sm:table-cell">{{ 'lb.exact' | t }}</th>
-              <th class="px-3 py-3 text-right">{{ 'lb.points' | t }}</th>
+              <th class="hidden px-3 py-3 text-center sm:table-cell">{{ 'lb.scored' | t }}</th>
+              <th class="hidden px-3 py-3 text-center sm:table-cell">{{ 'lb.exact' | t }}</th>
+              <th class="px-3 py-3 text-center">{{ 'lb.points' | t }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-white/5">
@@ -70,13 +70,13 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
                     <span class="ml-1 text-xs font-normal text-pitch-300">({{ 'c.you' | t }})</span>
                   }
                 </td>
-                <td class="hidden px-3 py-3 text-right tabular-nums text-slate-400 sm:table-cell">
+                <td class="hidden px-3 py-3 text-center tabular-nums text-slate-400 sm:table-cell">
                   {{ row.matches_scored }}
                 </td>
-                <td class="hidden px-3 py-3 text-right tabular-nums text-slate-400 sm:table-cell">
+                <td class="hidden px-3 py-3 text-center tabular-nums text-slate-400 sm:table-cell">
                   {{ row.exact_hits }}
                 </td>
-                <td class="px-3 py-3 text-right text-base font-black tabular-nums text-pitch-300">
+                <td class="px-3 py-3 text-center text-base font-black tabular-nums text-pitch-300">
                   {{ row.total_points }}
                 </td>
               </tr>
