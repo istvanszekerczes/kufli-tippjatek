@@ -28,6 +28,21 @@ select cron.schedule(
   $$
 );
 
+-- missing-picks push reminder — hourly (deduped, so the exact minute doesn't matter)
+select cron.unschedule(jobid) from cron.job where jobname = 'kufli-notify';
+
+select cron.schedule(
+  'kufli-notify',
+  '7 * * * *',
+  $$
+  select net.http_post(
+    url     := 'https://qehmgeeejcnfsblkrvgq.supabase.co/functions/v1/notify-missing-picks',
+    headers := '{"Content-Type":"application/json"}'::jsonb,
+    body    := '{}'::jsonb
+  );
+  $$
+);
+
 -- check it:
 --   select jobname, schedule, active from cron.job;
 --   select status, return_message, start_time

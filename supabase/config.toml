@@ -6,6 +6,9 @@ project_id = "ucl-tipp"
 # so the platform JWT check is disabled.
 verify_jwt = false
 
+[functions.notify-missing-picks]
+verify_jwt = false
+
 # Local-dev only (ignored by the hosted project). Point these at your deployed
 # URL when running `supabase start` against a real frontend.
 [auth]

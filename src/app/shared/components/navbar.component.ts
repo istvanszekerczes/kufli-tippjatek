@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@ang
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { LeaderboardService } from '../../core/leaderboard.service';
+import { PushService } from '../../core/push.service';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
@@ -48,6 +49,23 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
           >
             {{ i18n.lang() === 'hu' ? 'EN' : 'HU' }}
           </button>
+
+          @if (push.supported && push.permission() !== 'denied') {
+            <button
+              class="btn-ghost !px-2.5 !py-2 text-base"
+              [class.!text-pitch-400]="push.enabled()"
+              [disabled]="push.busy()"
+              (click)="toggleNotifs()"
+              [title]="
+                push.enabled()
+                  ? (i18n.lang() === 'hu' ? 'Értesítések kikapcsolása' : 'Turn notifications off')
+                  : (i18n.lang() === 'hu' ? 'Emlékeztető, ha nincs tipped' : 'Remind me about missing tips')
+              "
+              aria-label="notifications"
+            >
+              {{ push.enabled() ? '🔔' : '🔕' }}
+            </button>
+          }
 
           @if (lb.me(); as me) {
             <a
@@ -105,6 +123,7 @@ export class NavbarComponent {
   readonly auth = inject(AuthService);
   readonly lb = inject(LeaderboardService);
   readonly i18n = inject(I18nService);
+  readonly push = inject(PushService);
   readonly open = signal(false);
 
   readonly links = [
@@ -116,8 +135,26 @@ export class NavbarComponent {
 
   constructor() {
     effect(() => {
-      if (this.auth.isLoggedIn()) void this.lb.loadMe();
+      if (this.auth.isLoggedIn()) {
+        void this.lb.loadMe();
+        void this.push.refresh();
+      }
     });
+  }
+
+  async toggleNotifs(): Promise<void> {
+    if (this.push.enabled()) {
+      await this.push.disable();
+    } else {
+      const r = await this.push.enable();
+      if (!r.ok && r.reason === 'denied') {
+        alert(
+          this.i18n.lang() === 'hu'
+            ? 'Az értesítések le vannak tiltva a böngésződben. Engedélyezd a webhely beállításainál.'
+            : 'Notifications are blocked in your browser. Allow them in the site settings.'
+        );
+      }
+    }
   }
 
   initial(): string {

@@ -33,3 +33,41 @@ self.addEventListener('fetch', (event) => {
       .catch(() => caches.match(req).then((hit) => hit || caches.match('/index.html')))
   );
 });
+
+// ── Web Push ───────────────────────────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Kufli TippJáték', {
+      body: data.body || '',
+      icon: '/kufli-logo-192.png',
+      badge: '/favicon.png',
+      tag: data.tag || 'kufli',
+      renotify: !!data.tag,
+      data: { url: data.url || '/' }
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    (async () => {
+      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const w of wins) {
+        if (w.url.startsWith(self.location.origin)) {
+          await w.focus();
+          if ('navigate' in w) await w.navigate(target);
+          return;
+        }
+      }
+      await self.clients.openWindow(target);
+    })()
+  );
+});
