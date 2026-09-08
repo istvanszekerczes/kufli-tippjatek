@@ -45,6 +45,16 @@ export const en: Record<string, string> = {
   'auth.createBtn': 'Create account',
   'auth.already': 'Already registered?',
   'auth.checkEmail': 'Almost there — check {email} for a confirmation link, then sign in.',
+  "auth.forgot": "Forgot password?",
+  "auth.forgotTitle": "Reset your password",
+  "auth.forgotSub": "We will email you a link to set a new one.",
+  "auth.forgotBtn": "Send reset link",
+  "auth.forgotSent": "Check {email} for a link to set a new password.",
+  "auth.resetTitle": "Set a new password",
+  "auth.newPassword": "New password",
+  "auth.resetBtn": "Save new password",
+  "auth.resetDone": "Password updated — you are signed in.",
+  "auth.resetNoSession": "This reset link is invalid or has expired.",
 
   // dashboard
   'dash.tagline': 'Champions League predictions · exact score = 5 pts · outright winner = 15 pts',

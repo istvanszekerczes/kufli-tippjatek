@@ -46,6 +46,16 @@ export const hu: Record<string, string> = {
   'auth.already': 'Van már fiókod?',
   'auth.checkEmail':
     'Már majdnem kész – nézd meg a(z) {email} címre küldött megerősítő linket, majd jelentkezz be.',
+  "auth.forgot": "Elfelejtetted a jelszavad?",
+  "auth.forgotTitle": "Jelszó visszaállítása",
+  "auth.forgotSub": "Küldünk egy linket egy új jelszó beállításához.",
+  "auth.forgotBtn": "Visszaállító link küldése",
+  "auth.forgotSent": "Nézd meg a(z) {email} címre küldött linket az új jelszóhoz.",
+  "auth.resetTitle": "Új jelszó beállítása",
+  "auth.newPassword": "Új jelszó",
+  "auth.resetBtn": "Új jelszó mentése",
+  "auth.resetDone": "Jelszó frissítve – be vagy jelentkezve.",
+  "auth.resetNoSession": "Ez a visszaállító link érvénytelen vagy lejárt.",
 
   // dashboard
   'dash.tagline':

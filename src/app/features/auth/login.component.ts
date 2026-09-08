@@ -40,7 +40,13 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
         </button>
       </form>
 
-      <p class="mt-4 text-center text-sm text-slate-400">
+      <p class="mt-3 text-center text-sm">
+        <a routerLink="/forgot" class="text-slate-400 hover:text-pitch-400 hover:underline">
+          {{ 'auth.forgot' | t }}
+        </a>
+      </p>
+
+      <p class="mt-2 text-center text-sm text-slate-400">
         {{ 'auth.noAccount' | t }}
         <a routerLink="/register" class="font-semibold text-pitch-400 hover:underline">{{ 'auth.createOne' | t }}</a>
       </p>

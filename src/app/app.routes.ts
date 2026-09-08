@@ -16,6 +16,17 @@ export const routes: Routes = [
     title: 'Create account · Kufli TippJáték'
   },
   {
+    path: 'forgot',
+    canActivate: [guestGuard],
+    loadComponent: () => import('./features/auth/forgot.component').then((m) => m.ForgotComponent),
+    title: 'Reset password · Kufli TippJáték'
+  },
+  {
+    path: 'reset',
+    loadComponent: () => import('./features/auth/reset.component').then((m) => m.ResetComponent),
+    title: 'New password · Kufli TippJáték'
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () =>
